@@ -92,4 +92,16 @@ public enum GPRegister8 {
     public boolean getRexCompatible() {
         return rex_compatible;
     }
+
+    @Contract(value = " -> new", pure = true)
+    public @NotNull Argument toArgument() {
+        return new Argument();
+    }
+
+    final public class Argument implements org.yajd.x86.cpu.Argument {
+        @Override
+        public <Type> Type process(@NotNull Result<Type> result) {
+            return result.when(GPRegister8.this);
+        }
+    }
 }

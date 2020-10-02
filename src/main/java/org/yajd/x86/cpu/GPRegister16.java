@@ -73,4 +73,16 @@ public enum GPRegister16 {
     public int getIndex() {
         return index;
     }
+
+    @Contract(value = " -> new", pure = true)
+    public @NotNull Argument toArgument() {
+        return new Argument();
+    }
+
+    final public class Argument implements org.yajd.x86.cpu.Argument {
+        @Override
+        public <Type> Type process(@NotNull Result<Type> result) {
+            return result.when(GPRegister16.this);
+        }
+    }
 }
