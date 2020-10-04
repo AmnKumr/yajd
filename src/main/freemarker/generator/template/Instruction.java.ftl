@@ -12,6 +12,13 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+<#function classname name arguments>
+    <#assign result>${
+        name?capitalize}<#list arguments as argument>${
+        argument_to_class_name["${argument}"]
+    }</#list></#assign>
+    <#return result>
+</#function>
 package ${session.currentProject.model.groupId}.x86.cpu;
 
 import org.jetbrains.annotations.Contract;
@@ -30,27 +37,30 @@ public interface Instruction {
         default Type when(Instruction argument) {
             return null;
         }
-<#list instructions as instruction>
-        default Type when(${instruction.class} argument) {
+<#list instructions as instruction_class>
+    <#list instruction_class.names as instruction_name>
+        default Type when(${classname(instruction_name, instruction_class.arguments)} argument) {
             return when((Instruction) argument);
         }
+    </#list>
 </#list>
     }
 
-<#list instructions as instruction>
-    final class ${instruction.class} implements Instruction {
-<#list instruction.arguments as argument>
+<#list instructions as instruction_class>
+    <#list instruction_class.names as instruction_name>
+    final class ${classname(instruction_name, instruction_class.arguments)} implements Instruction {
+        <#list instruction_class.arguments as argument>
         final private ${argument} arg${argument?index};
-</#list>
+        </#list>
 
-        public ${instruction.class}(
-<#list instruction.arguments as argument>
+        public ${classname(instruction_name, instruction_class.arguments)}(
+        <#list instruction_class.arguments as argument>
             ${argument} arg${argument?index}<#sep>, </#sep>
-</#list>
+        </#list>
                 ) {
-<#list instruction.arguments as argument>
+        <#list instruction_class.arguments as argument>
             this.arg${argument?index} = arg${argument?index};
-</#list>
+        </#list>
         }
 
         @Override
@@ -60,22 +70,23 @@ public interface Instruction {
 
         @Contract(pure = true)
         public @NotNull String getName() {
-            return "${instruction.name}";
+            return "${instruction_name}";
         }
 
         public Argument[] getArguments() {
             return new Argument[]{
-<#list instruction.arguments as argument>
+        <#list instruction_class.arguments as argument>
                 arg${argument?index}.toArgument()<#sep>, </#sep>
-</#list>
+        </#list>
                         };
         }
 
-<#list instruction.arguments as argument>
+        <#list instruction_class.arguments as argument>
         public ${argument} getArg${argument?index}() {
             return arg${argument?index};
         }
-</#list>
+        </#list>
     }
+    </#list>
 </#list>
 }

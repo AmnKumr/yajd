@@ -15,26 +15,28 @@
 {
   "templateName": "Instruction.java.ftl",
   "dataModel": {
+    "argument_to_class_name" : {
+      "GPRegister8": "Reg8",
+      "GPRegister16": "Reg16",
+      "GPRegister32": "Reg32",
+      "GPRegister64": "Reg64"
+    },
     "instructions": [
       {
-        "class" : "MovReg8Reg8",
-        "name" : "mov",
-        "arguments" : ["GPRegister8", "GPRegister8" ]
+        "arguments" : ["GPRegister8", "GPRegister8" ],
+        "names" : ["add", "mov", "sub"]
       },
       {
-        "class" : "MovReg16Reg16",
-        "name" : "mov",
-        "arguments" : ["GPRegister16", "GPRegister16" ]
+        "arguments" : ["GPRegister16", "GPRegister16" ],
+        "names" : ["add", "mov", "sub"]
       },
       {
-        "class" : "MovReg32Reg32",
-        "name" : "mov",
-        "arguments" : ["GPRegister32", "GPRegister32" ]
+        "arguments" : ["GPRegister32", "GPRegister32" ],
+        "names" : ["add", "mov", "sub"]
       },
       {
-        "class" : "MovReg64Reg64",
-        "name" : "mov",
-        "arguments" : ["GPRegister64", "GPRegister64" ]
+        "arguments" : ["GPRegister64", "GPRegister64" ],
+        "names" : ["add", "mov", "sub"]
       }
     ]
   }

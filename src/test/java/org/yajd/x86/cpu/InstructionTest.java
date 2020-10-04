@@ -29,6 +29,14 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 public class InstructionTest {
     static Stream<Arguments> TwoArgumentInstructions() {
         return Stream.of(
+                arguments(new Instruction.AddReg8Reg8(GPRegister8.AL, GPRegister8.CL),
+                        GPRegister8.AL, GPRegister8.CL),
+                arguments(new Instruction.AddReg16Reg16(GPRegister16.AX, GPRegister16.CX),
+                        GPRegister16.AX, GPRegister16.CX),
+                arguments(new Instruction.AddReg32Reg32(GPRegister32.EAX, GPRegister32.ECX),
+                        GPRegister32.EAX, GPRegister32.ECX),
+                arguments(new Instruction.AddReg64Reg64(GPRegister64.RAX, GPRegister64.RCX),
+                        GPRegister64.RAX, GPRegister64.RCX),
                 arguments(new Instruction.MovReg8Reg8(GPRegister8.AL, GPRegister8.CL),
                         GPRegister8.AL, GPRegister8.CL),
                 arguments(new Instruction.MovReg16Reg16(GPRegister16.AX, GPRegister16.CX),
@@ -36,6 +44,14 @@ public class InstructionTest {
                 arguments(new Instruction.MovReg32Reg32(GPRegister32.EAX, GPRegister32.ECX),
                         GPRegister32.EAX, GPRegister32.ECX),
                 arguments(new Instruction.MovReg64Reg64(GPRegister64.RAX, GPRegister64.RCX),
+                        GPRegister64.RAX, GPRegister64.RCX),
+                arguments(new Instruction.SubReg8Reg8(GPRegister8.AL, GPRegister8.CL),
+                        GPRegister8.AL, GPRegister8.CL),
+                arguments(new Instruction.SubReg16Reg16(GPRegister16.AX, GPRegister16.CX),
+                        GPRegister16.AX, GPRegister16.CX),
+                arguments(new Instruction.SubReg32Reg32(GPRegister32.EAX, GPRegister32.ECX),
+                        GPRegister32.EAX, GPRegister32.ECX),
+                arguments(new Instruction.SubReg64Reg64(GPRegister64.RAX, GPRegister64.RCX),
                         GPRegister64.RAX, GPRegister64.RCX));
     }
 
