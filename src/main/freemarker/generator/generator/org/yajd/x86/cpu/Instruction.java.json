@@ -27,15 +27,7 @@
         "names" : ["add", "mov", "sub"]
       },
       {
-        "arguments" : ["GPRegister16", "GPRegister16" ],
-        "names" : ["add", "mov", "sub"]
-      },
-      {
-        "arguments" : ["GPRegister32", "GPRegister32" ],
-        "names" : ["add", "mov", "sub"]
-      },
-      {
-        "arguments" : ["GPRegister64", "GPRegister64" ],
+        "arguments" : ["GPRegisterNative", "GPRegisterNative" ],
         "names" : ["add", "mov", "sub"]
       }
     ]

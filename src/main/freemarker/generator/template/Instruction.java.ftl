@@ -12,6 +12,40 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+<#function native_sized_operand arguments>
+    <#list arguments as argument>
+        <#if argument == "GPRegisterNative">
+            <#return true>
+        </#if>
+    </#list>
+    <#return false>
+</#function>
+<#function replace_native_arguments arguments replacement>
+    <#if arguments?size == 0>
+        <#return []>
+    <#else>
+        <#if arguments[0] == "GPRegisterNative">
+            <#return [replacement] + replace_native_arguments(arguments[1..], replacement)>
+        <#else>
+            <#return [arguments[0]] + replace_native_arguments(arguments[1..], replacement)>
+        </#if>
+    </#if>
+</#function>
+<#function expand_native_arguments instructions>
+    <#if instructions?size == 0>
+        <#return []>
+    <#else>
+        <#if native_sized_operand(instructions[0].arguments)>
+            <#return
+                [instructions[0] + {"arguments": replace_native_arguments(instructions[0].arguments, "GPRegister16")}] +
+                [instructions[0] + {"arguments": replace_native_arguments(instructions[0].arguments, "GPRegister32")}] +
+                [instructions[0] + {"arguments": replace_native_arguments(instructions[0].arguments, "GPRegister64")}] +
+                expand_native_arguments(instructions[1..])>
+        <#else>
+            <#return [instructions[0]] + expand_native_arguments(instructions[1..])>
+        </#if>
+    </#if>
+</#function>
 <#function classname name arguments>
     <#assign result>${
         name?capitalize}<#list arguments as argument>${
@@ -37,7 +71,7 @@ public interface Instruction {
         default Type when(Instruction argument) {
             return null;
         }
-<#list instructions as instruction_class>
+<#list expand_native_arguments(instructions) as instruction_class>
     <#list instruction_class.names as instruction_name>
         default Type when(${classname(instruction_name, instruction_class.arguments)} argument) {
             return when((Instruction) argument);
@@ -46,7 +80,7 @@ public interface Instruction {
 </#list>
     }
 
-<#list instructions as instruction_class>
+<#list expand_native_arguments(instructions) as instruction_class>
     <#list instruction_class.names as instruction_name>
     final class ${classname(instruction_name, instruction_class.arguments)} implements Instruction {
         <#list instruction_class.arguments as argument>
