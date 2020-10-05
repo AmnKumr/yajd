@@ -17,62 +17,59 @@ package org.yajd.x86.cpu;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
-public enum GPRegister64 {
-    RAX("eax", 0),
-    RCX("ecx", 1),
-    RDX("edx", 2),
-    RBX("ebx", 3),
-    RSP("esp", 4),
-    RBP("ebp", 5),
-    RSI("esi", 6),
-    RDI("edi", 7),
-    R8("r8d", 8),
-    R9("r9d", 9),
-    R10("r10d", 10),
-    R11("r11d", 11),
-    R12("r12d", 12),
-    R13("r13d", 13),
-    R14("r14d", 14),
-    R15("r15d", 15),
-    RIZ("riz", -1); // EIZ can be used in 64-bit address.
+import java.util.Optional;
 
-    private final static GPRegister64[] registers = {
-            RAX, RCX, RDX, RBX, RSP, RBP, RSI, RDI, R8, R9, R10, R11, R12, R13, R14, R15};
-    private final String name;
-    private final int index;
+public class GPAddress64 {
+    private final Optional<SegmentRegister> segment;
+    private final Optional<GPRegister64> base;
+    private final Optional<GPRegister64> index;
+    // Note: scale may be always present even if there are no index.
+    // It does not chage semantic, but it affects encoding.
+    private final ScaleFactor scale;
+    private final int disp;
+    private final short size; // Memory operand size, 0 if not specified (e.g. lea).
 
-    GPRegister64(String name, int index) {
-        this.name = name;
+    GPAddress64(Optional<SegmentRegister> segment, Optional<GPRegister64> base,
+                Optional<GPRegister64> index, ScaleFactor scale, int disp) {
+        this.segment = segment;
+        this.base = base;
         this.index = index;
+        this.scale = scale;
+        this.disp = disp;
+        this.size = 0;
     }
 
-    @Contract(pure = true)
-    public static GPRegister64 of(int index) {
-        return registers[index];
+    GPAddress64(GPAddress64 addr, short size) {
+        this.segment = addr.segment;
+        this.base = addr.base;
+        this.index = addr.index;
+        this.scale = addr.scale;
+        this.disp = addr.disp;
+        this.size = size;
     }
 
-    @Contract(pure = true)
-    public static GPRegister64 of(@NotNull GPRegister8 r) {
-        assert r.getRexCompatible();
-        return registers[r.getIndex()];
+    public Optional<SegmentRegister> getSegment() {
+        return segment;
     }
 
-    @Contract(pure = true)
-    public static GPRegister64 of(@NotNull GPRegister16 r) {
-        return registers[r.getIndex()];
+    public Optional<GPRegister64> getBase() {
+        return base;
     }
 
-    @Contract(pure = true)
-    public static GPRegister64 of(@NotNull GPRegister32 r) {
-        return registers[r.getIndex()];
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public int getIndex() {
+    public Optional<GPRegister64> getIndex() {
         return index;
+    }
+
+    public ScaleFactor getScale() {
+        return scale;
+    }
+
+    public int getDisp() {
+        return disp;
+    }
+
+    public short getSize() {
+        return size;
     }
 
     @Contract(value = " -> new", pure = true)
@@ -83,7 +80,7 @@ public enum GPRegister64 {
     final public class Argument implements org.yajd.x86.cpu.Argument {
         @Override
         public <Type> Type process(@NotNull Result<Type> result) {
-            return result.when(GPRegister64.this);
+            return result.when(GPAddress64.this);
         }
     }
 }

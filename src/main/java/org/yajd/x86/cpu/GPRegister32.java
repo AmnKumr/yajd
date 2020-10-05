@@ -33,7 +33,8 @@ public enum GPRegister32 {
     R12D("r12d", 12),
     R13D("r13d", 13),
     R14D("r14d", 14),
-    R15D("r15d", 15);
+    R15D("r15d", 15),
+    EIZ("eiz", -1); // EIZ can be used in 32-bit address.
 
     private final static GPRegister32[] registers = {
             EAX, ECX, EDX, EBX, ESP, EBP, ESI, EDI, R8D, R9D, R10D, R11D, R12D, R13D, R14D, R15D};

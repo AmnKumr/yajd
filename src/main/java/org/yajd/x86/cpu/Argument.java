@@ -39,5 +39,29 @@ public interface Argument {
         default Type when(@NotNull GPRegister64 argument) {
             return when(argument.toArgument());
         }
+
+        default Type when(@NotNull SegmentRegister argument) {
+            return when(argument.toArgument());
+        }
+
+        default Type when(@NotNull GPAddress16 argument) {
+            return when(argument.toArgument());
+        }
+
+        default Type when(@NotNull GPAddress32 argument) {
+            return when(argument.toArgument());
+        }
+
+        default Type when(@NotNull EIPAddress32 argument) {
+            return when(argument.toArgument());
+        }
+
+        default Type when(@NotNull GPAddress64 argument) {
+            return when(argument.toArgument());
+        }
+
+        default Type when(@NotNull RIPAddress64 argument) {
+            return when(argument.toArgument());
+        }
     }
 }
