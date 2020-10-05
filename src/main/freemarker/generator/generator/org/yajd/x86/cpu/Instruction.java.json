@@ -19,15 +19,43 @@
       "GPRegister8": "Reg8",
       "GPRegister16": "Reg16",
       "GPRegister32": "Reg32",
-      "GPRegister64": "Reg64"
+      "GPRegister64": "Reg64",
+      "GPAddress16/8": "Addr16Mem8",
+      "GPAddress16/16": "Addr16Mem16",
+      "GPAddress16/32": "Addr16Mem32",
+      "GPAddress16/64": "Addr16Mem64",
+      "GPAddress32/8": "Addr32Mem8",
+      "GPAddress32/16": "Addr32Mem16",
+      "GPAddress32/32": "Addr32Mem32",
+      "GPAddress32/64": "Addr32Mem64",
+      "EIPAddress32/8": "EIPAddr32Mem8",
+      "EIPAddress32/16": "EIPAddr32Mem16",
+      "EIPAddress32/32": "EIPAddr32Mem32",
+      "EIPAddress32/64": "EIPAddr32Mem64",
+      "GPAddress64/8": "Addr64Mem8",
+      "GPAddress64/16": "Addr64Mem16",
+      "GPAddress64/32": "Addr64Mem32",
+      "GPAddress64/64": "Addr64Mem64",
+      "RIPAddress64/8": "RIPAddr64Mem8",
+      "RIPAddress64/16": "RIPAddr64Mem16",
+      "RIPAddress64/32": "RIPAddr64Mem32",
+      "RIPAddress64/64": "RIPAddr64Mem64"
     },
     "instructions": [
       {
-        "arguments" : ["GPRegister8", "GPRegister8" ],
+        "arguments" : ["GPRegister8", "GPRegister8/Memory8" ],
         "names" : ["add", "mov", "sub"]
       },
       {
-        "arguments" : ["GPRegisterNative", "GPRegisterNative" ],
+        "arguments" : ["Memory8", "GPRegister8" ],
+        "names" : ["add", "mov", "sub"]
+      },
+      {
+        "arguments" : ["GPRegisterNative", "GPRegisterNative/MemoryNative" ],
+        "names" : ["add", "mov", "sub"]
+      },
+      {
+        "arguments" : ["MemoryNative", "GPRegisterNative" ],
         "names" : ["add", "mov", "sub"]
       }
     ]
