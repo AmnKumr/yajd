@@ -12,6 +12,15 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+<#function element_in_list element list>
+    <#if list?size == 0>
+        <#return false>
+    <#elseif element == list[0]>
+        <#return true>
+    <#else>
+        <#return element_in_list(element, list[1..])>
+    </#if>
+</#function>
 <#function same_lists x y>
     <#if x?size == 0>
         <#if y?size == 0>
@@ -30,17 +39,20 @@
 <#function replace_arguments arguments from to>
     <#if arguments?size == 0>
         <#return []>
-    <#else>
-        <#if arguments[0] == from>
-            <#return [to] + replace_arguments(arguments[1..], from, to)>
+    <#elseif from?size == 1>
+        <#if arguments[0] == from[0]>
+            <#return [to[0]] + replace_arguments(arguments[1..], from, to)>
         <#else>
             <#return [arguments[0]] + replace_arguments(arguments[1..], from, to)>
         </#if>
+    <#else>
+        <#return replace_arguments(
+            replace_arguments(arguments, [from[0]], [to[0]]), from[1..], to[1..])>
     </#if>
 </#function>
 <#function address_operand arguments>
     <#list arguments as argument>
-        <#if argument == "Memory8" || argument == "Memory16" || argument == "Memory32" || argument == "Memory64">
+        <#if element_in_list(argument, ["Memory8", "Memory16", "Memory32", "Memory64"])>
             <#return true>
         </#if>
     </#list>
@@ -52,11 +64,26 @@
     <#else>
         <#if address_operand(instructions[0].arguments)>
             <#return
-                [instructions[0] + {"arguments": replace_arguments(replace_arguments(replace_arguments(replace_arguments(instructions[0].arguments, "Memory8", "GPAddress16/8"), "Memory16", "GPAddress16/16"), "Memory32", "GPAddress16/32"), "Memory64", "GPAddress16/64")}] +
-                [instructions[0] + {"arguments": replace_arguments(replace_arguments(replace_arguments(replace_arguments(instructions[0].arguments, "Memory8", "GPAddress32/8"), "Memory16", "GPAddress32/16"), "Memory32", "GPAddress32/32"), "Memory64", "GPAddress32/64")}] +
-                [instructions[0] + {"arguments": replace_arguments(replace_arguments(replace_arguments(replace_arguments(instructions[0].arguments, "Memory8", "EIPAddress32/8"), "Memory16", "EIPAddress32/16"), "Memory32", "EIPAddress32/32"), "Memory64", "EIPAddress32/64")}] +
-                [instructions[0] + {"arguments": replace_arguments(replace_arguments(replace_arguments(replace_arguments(instructions[0].arguments, "Memory8", "GPAddress64/8"), "Memory16", "GPAddress64/16"), "Memory32", "GPAddress64/32"), "Memory64", "GPAddress64/64")}] +
-                [instructions[0] + {"arguments": replace_arguments(replace_arguments(replace_arguments(replace_arguments(instructions[0].arguments, "Memory8", "RIPAddress64/8"), "Memory16", "RIPAddress64/16"), "Memory32", "RIPAddress64/32"), "Memory64", "RIPAddress64/64")}] +
+                [instructions[0] + {"arguments": replace_arguments(
+                    instructions[0].arguments,
+                    ["Memory8", "Memory16", "Memory32", "Memory64"],
+                    ["GPAddress16/8", "GPAddress16/16", "GPAddress16/32", "GPAddress16/64"])}] +
+                [instructions[0] + {"arguments": replace_arguments(
+                    instructions[0].arguments,
+                    ["Memory8", "Memory16", "Memory32", "Memory64"],
+                    ["GPAddress32/8", "GPAddress32/16", "GPAddress32/32", "GPAddress32/64"])}] +
+                [instructions[0] + {"arguments": replace_arguments(
+                    instructions[0].arguments,
+                    ["Memory8", "Memory16", "Memory32", "Memory64"],
+                    ["EIPAddress32/8", "EIPAddress32/16", "EIPAddress32/32", "EIPAddress32/64"])}] +
+                [instructions[0] + {"arguments": replace_arguments(
+                    instructions[0].arguments,
+                    ["Memory8", "Memory16", "Memory32", "Memory64"],
+                    ["GPAddress64/8", "GPAddress64/16", "GPAddress64/32", "GPAddress64/64"])}] +
+                [instructions[0] + {"arguments": replace_arguments(
+                    instructions[0].arguments,
+                    ["Memory8", "Memory16", "Memory32", "Memory64"],
+                    ["RIPAddress64/8", "RIPAddress64/16", "RIPAddress64/32", "RIPAddress64/64"])}] +
                 expand_native_arguments(instructions[1..])>
         <#else>
             <#return [instructions[0]] + expand_native_arguments(instructions[1..])>
@@ -77,12 +104,23 @@
     <#else>
         <#if native_sized_operand(instructions[0].arguments)>
             <#return
-                expand_address_arguments([instructions[0] + {"arguments": replace_arguments(replace_arguments(instructions[0].arguments, "GPRegisterNative", "GPRegister16"), "MemoryNative", "Memory16")}] +
-                                         [instructions[0] + {"arguments": replace_arguments(replace_arguments(instructions[0].arguments, "GPRegisterNative", "GPRegister32"), "MemoryNative", "Memory32")}] +
-                                         [instructions[0] + {"arguments": replace_arguments(replace_arguments(instructions[0].arguments, "GPRegisterNative", "GPRegister64"), "MemoryNative", "Memory64")}]) +
+                expand_address_arguments(
+                    [instructions[0] + {"arguments": replace_arguments(
+                        instructions[0].arguments,
+                        ["GPRegisterNative", "MemoryNative"],
+                        ["GPRegister16", "Memory16"])}] +
+                    [instructions[0] + {"arguments": replace_arguments(
+                        instructions[0].arguments,
+                        ["GPRegisterNative", "MemoryNative"],
+                        ["GPRegister32", "Memory32"])}] +
+                    [instructions[0] + {"arguments": replace_arguments(
+                        instructions[0].arguments,
+                        ["GPRegisterNative", "MemoryNative"],
+                        ["GPRegister64", "Memory64"])}]) +
                 expand_native_arguments(instructions[1..])>
         <#else>
-            <#return expand_address_arguments([instructions[0]]) + expand_native_arguments(instructions[1..])>
+            <#return expand_address_arguments([instructions[0]]) +
+                     expand_native_arguments(instructions[1..])>
         </#if>
     </#if>
 </#function>
@@ -101,11 +139,19 @@
     <#else>
         <#if memory_register_operand(instructions[0].arguments)>
             <#return
-                expand_native_arguments([instructions[0] + {"arguments": replace_arguments(replace_arguments(instructions[0].arguments, "GPRegister8/Memory8", "GPRegister8"), "GPRegisterNative/MemoryNative", "GPRegisterNative")}] +
-                                        [instructions[0] + {"arguments": replace_arguments(replace_arguments(instructions[0].arguments, "GPRegister8/Memory8", "Memory8"), "GPRegisterNative/MemoryNative", "MemoryNative")}]) +
+                expand_native_arguments(
+                    [instructions[0] + {"arguments": replace_arguments(
+                        instructions[0].arguments,
+                        ["GPRegister8/Memory8", "GPRegisterNative/MemoryNative"],
+                        ["GPRegister8", "GPRegisterNative"])}] +
+                    [instructions[0] + {"arguments": replace_arguments(
+                        instructions[0].arguments,
+                        ["GPRegister8/Memory8", "GPRegisterNative/MemoryNative"],
+                        ["Memory8", "MemoryNative"])}]) +
                 expand_memory_register_arguments(instructions[1..])>
         <#else>
-            <#return expand_native_arguments([instructions[0]]) + expand_memory_register_arguments(instructions[1..])>
+            <#return expand_native_arguments([instructions[0]]) +
+                     expand_memory_register_arguments(instructions[1..])>
         </#if>
     </#if>
 </#function>
@@ -122,18 +168,24 @@
             <#return filter_out_instructions(existing_names, new_names[1..])>
         </#if>
     <#else>
-        <#return filter_out_instructions(existing_names[0], filter_out_instructions(existing_names[1..], new_names))>
+        <#return filter_out_instructions(existing_names[0],
+                     filter_out_instructions(existing_names[1..], new_names))>
     </#if>
 </#function>
 <#function merge_instruction merged_instructions original_instructions>
     <#if original_instructions?size == 0>
         <#return merged_instructions>
-    <#elseif merged_instructions?filter(x -> same_lists(x.arguments, original_instructions[0].arguments))?size == 0>
-        <#return merge_instruction(merged_instructions + [original_instructions[0]], original_instructions[1..])>
+    <#elseif merged_instructions?filter(
+                 x -> same_lists(x.arguments, original_instructions[0].arguments))?size == 0>
+        <#return merge_instruction(merged_instructions + [original_instructions[0]],
+                                   original_instructions[1..])>
     <#else>
-        <#assign filtered_names = filter_out_instructions(merged_instructions?filter(x -> same_lists(x.arguments, original_instructions[0].arguments))?map(x -> x.names), original_instructions[0].names)>
+        <#local filtered_names = filter_out_instructions(merged_instructions?filter(
+                    x -> same_lists(x.arguments, original_instructions[0].arguments))?map(
+                    x -> x.names), original_instructions[0].names)>
         <#if filtered_names?size != 0>
-            <#return merge_instruction(merged_instructions + [original_instructions[0] + {"names": filtered_names}], original_instructions[1..])>
+            <#return merge_instruction(merged_instructions + [original_instructions[0] + {"names":
+                         filtered_names}], original_instructions[1..])>
         <#else>
             <#return merge_instruction(merged_instructions, original_instructions[1..])>
         </#if>
@@ -143,10 +195,10 @@
     <#return merge_instruction([], expand_memory_register_arguments(instructions))>
 </#function>
 <#function classname name arguments>
-    <#assign result>${
+    <#local result>${
         name?capitalize}<#list arguments as argument>${
         argument_to_class_name[argument]
-    }</#list></#assign>
+    }</#list></#local>
     <#return result>
 </#function>
 package ${session.currentProject.model.groupId}.x86.cpu;
@@ -180,17 +232,18 @@ public interface Instruction {
     <#list instruction_class.names as instruction_name>
     final class ${classname(instruction_name, instruction_class.arguments)} implements Instruction {
         <#list instruction_class.arguments as argument>
-        final private ${argument?split("/")[0]} arg${argument?index};
+        final private ${argument?keep_before("/")} arg${argument?index};
         </#list>
 
         public ${classname(instruction_name, instruction_class.arguments)}(
         <#list instruction_class.arguments as argument>
-            ${argument?split("/")[0]} arg${argument?index}<#sep>, </#sep>
+            ${argument?keep_before("/")} arg${argument?index}<#sep>, </#sep>
         </#list>
                 ) {
         <#list instruction_class.arguments as argument>
-            <#if 1 < argument?split("/")?size>
-            this.arg${argument?index} = new ${argument?split("/")[0]}(arg${argument?index}, (short)${argument?split("/")[1]});
+            <#if argument?contains("/")>
+            this.arg${argument?index} = new ${argument?keep_before("/")}(
+                arg${argument?index}, (short)${argument?keep_after("/")});
             <#else>
             this.arg${argument?index} = arg${argument?index};
             </#if>
@@ -216,7 +269,7 @@ public interface Instruction {
         }
 
         <#list instruction_class.arguments as argument>
-        public ${argument?split("/")[0]} getArg${argument?index}() {
+        public ${argument?keep_before("/")} getArg${argument?index}() {
             return arg${argument?index};
         }
         </#list>
