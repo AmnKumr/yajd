@@ -12,6 +12,21 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+<#function same_lists x y>
+    <#if x?size == 0>
+        <#if y?size == 0>
+            <#return true>
+        <#else>
+            <#return false>
+        </#if>
+    <#elseif y?size == 0>
+        <#return false>
+    <#elseif x[0] == y[0]>
+        <#return same_lists(x[1..], y[1..])>
+    <#else>
+        <#return false>
+    </#if>
+</#function>
 <#function replace_arguments arguments from to>
     <#if arguments?size == 0>
         <#return []>
@@ -94,6 +109,39 @@
         </#if>
     </#if>
 </#function>
+<#function filter_out_instructions existing_names new_names>
+    <#return []>
+    <#if existing_names?size == 0>
+        <#return new_names>
+    <#elseif new_names?size == 0>
+        <#return []>
+    <#elseif existing_names?size == 1>
+        <#if existing_names[0]?filter(x -> x == new_names[0])?size == 0>
+            <#return [new_names[0]] + filter_out_instructions(existing_names, new_names[1..])>
+        <#else>
+            <#return filter_out_instructions(existing_names, new_names[1..])>
+        </#if>
+    <#else>
+        <#return filter_out_instructions(existing_names[0], filter_out_instructions(existing_names[1..], new_names))>
+    </#if>
+</#function>
+<#function merge_instruction merged_instructions original_instructions>
+    <#if original_instructions?size == 0>
+        <#return merged_instructions>
+    <#elseif merged_instructions?filter(x -> same_lists(x.arguments, original_instructions[0].arguments))?size == 0>
+        <#return merge_instruction(merged_instructions + [original_instructions[0]], original_instructions[1..])>
+    <#else>
+        <#assign filtered_names = filter_out_instructions(merged_instructions?filter(x -> same_lists(x.arguments, original_instructions[0].arguments))?map(x -> x.names), original_instructions[0].names)>
+        <#if filtered_names?size != 0>
+            <#return merge_instruction(merged_instructions + [original_instructions[0] + {"names": filtered_names}], original_instructions[1..])>
+        <#else>
+            <#return merge_instruction(merged_instructions, original_instructions[1..])>
+        </#if>
+    </#if>
+</#function>
+<#function expand_andmerge_instructions instructions>
+    <#return merge_instruction([], expand_memory_register_arguments(instructions))>
+</#function>
 <#function classname name arguments>
     <#assign result>${
         name?capitalize}<#list arguments as argument>${
@@ -119,7 +167,7 @@ public interface Instruction {
         default Type when(Instruction argument) {
             return null;
         }
-<#list expand_memory_register_arguments(instructions) as instruction_class>
+<#list expand_andmerge_instructions(instructions) as instruction_class>
     <#list instruction_class.names as instruction_name>
         default Type when(${classname(instruction_name, instruction_class.arguments)} argument) {
             return when((Instruction) argument);
@@ -128,7 +176,7 @@ public interface Instruction {
 </#list>
     }
 
-<#list expand_memory_register_arguments(instructions) as instruction_class>
+<#list expand_andmerge_instructions(instructions) as instruction_class>
     <#list instruction_class.names as instruction_name>
     final class ${classname(instruction_name, instruction_class.arguments)} implements Instruction {
         <#list instruction_class.arguments as argument>

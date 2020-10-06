@@ -47,7 +47,7 @@
         "names" : ["add", "mov", "sub"]
       },
       {
-        "arguments" : ["Memory8", "GPRegister8" ],
+        "arguments" : ["GPRegister8/Memory8", "GPRegister8" ],
         "names" : ["add", "mov", "sub"]
       },
       {
@@ -55,7 +55,7 @@
         "names" : ["add", "mov", "sub"]
       },
       {
-        "arguments" : ["MemoryNative", "GPRegisterNative" ],
+        "arguments" : ["GPRegisterNative/MemoryNative", "GPRegisterNative" ],
         "names" : ["add", "mov", "sub"]
       }
     ]
