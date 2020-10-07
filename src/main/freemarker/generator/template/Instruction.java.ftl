@@ -21,7 +21,7 @@
         <#return element_in_list(element, list[1..])>
     </#if>
 </#function>
-<#function same_lists x y>
+<#function same_argument_lists x y>
     <#if x?size == 0>
         <#if y?size == 0>
             <#return true>
@@ -30,8 +30,8 @@
         </#if>
     <#elseif y?size == 0>
         <#return false>
-    <#elseif x[0] == y[0]>
-        <#return same_lists(x[1..], y[1..])>
+    <#elseif x[0]?keep_after(":") == y[0]?keep_after(":")>
+        <#return same_argument_lists(x[1..], y[1..])>
     <#else>
         <#return false>
     </#if>
@@ -40,8 +40,9 @@
     <#if arguments?size == 0>
         <#return []>
     <#elseif from?size == 1>
-        <#if arguments[0] == from[0]>
-            <#return [to[0]] + replace_arguments(arguments[1..], from, to)>
+        <#if arguments[0]?keep_after(":") == from[0]>
+            <#return [arguments[0]?keep_before(":") + ":" + to[0]] +
+                      replace_arguments(arguments[1..], from, to)>
         <#else>
             <#return [arguments[0]] + replace_arguments(arguments[1..], from, to)>
         </#if>
@@ -52,7 +53,8 @@
 </#function>
 <#function address_operand arguments>
     <#list arguments as argument>
-        <#if element_in_list(argument, ["Memory8", "Memory16", "Memory32", "Memory64"])>
+        <#if element_in_list(argument?keep_after(":"),
+                             ["Memory8", "Memory16", "Memory32", "Memory64"])>
             <#return true>
         </#if>
     </#list>
@@ -92,11 +94,36 @@
 </#function>
 <#function native_sized_operand arguments>
     <#list arguments as argument>
-        <#if argument == "GPRegisterNative" || argument == "MemoryNative">
+        <#if element_in_list(argument?keep_after(":"), ["GPRegisterNative", "MemoryNative"])>
             <#return true>
         </#if>
     </#list>
     <#return false>
+</#function>
+<#function split_opcodes keys names opcode_16_bit_prefix opcode_32_bit_prefix opcode_64_bit_prefix>
+    <#if keys?size == 0>
+        <#return {}>
+    <#else>
+        <#if opcode_16_bit_prefix == "SKIP">
+            <#local opcode16 = "">
+        <#else>
+            <#local opcode16 = opcode_16_bit_prefix + names[keys[0]]>
+        </#if>
+        <#if opcode_32_bit_prefix == "SKIP">
+            <#local opcode32 = "">
+        <#else>
+            <#local opcode32 = opcode_32_bit_prefix + names[keys[0]]>
+        </#if>
+        <#if opcode_64_bit_prefix == "SKIP">
+            <#local opcode64 = "">
+        <#else>
+            <#local opcode64 = opcode_64_bit_prefix + names[keys[0]]>
+        </#if>
+        <#return
+            names +
+            {keys[0]: opcode16 + "|" + opcode32 + "|" + opcode64} +
+            split_opcodes(keys[1..], names, opcode_16_bit_prefix, opcode_32_bit_prefix, opcode_64_bit_prefix)>
+    </#if>
 </#function>
 <#function expand_native_arguments instructions>
     <#if instructions?size == 0>
@@ -105,18 +132,33 @@
         <#if native_sized_operand(instructions[0].arguments)>
             <#return
                 expand_address_arguments(
-                    [instructions[0] + {"arguments": replace_arguments(
-                        instructions[0].arguments,
-                        ["GPRegisterNative", "MemoryNative"],
-                        ["GPRegister16", "Memory16"])}] +
-                    [instructions[0] + {"arguments": replace_arguments(
-                        instructions[0].arguments,
-                        ["GPRegisterNative", "MemoryNative"],
-                        ["GPRegister32", "Memory32"])}] +
-                    [instructions[0] + {"arguments": replace_arguments(
-                        instructions[0].arguments,
-                        ["GPRegisterNative", "MemoryNative"],
-                        ["GPRegister64", "Memory64"])}]) +
+                    [instructions[0] + {
+                        "arguments": replace_arguments(
+                            instructions[0].arguments,
+                            ["GPRegisterNative", "MemoryNative"],
+                            ["GPRegister16", "Memory16"]),
+                        "names": split_opcodes(
+                            instructions[0].names?keys,
+                            instructions[0].names,
+                            "", "0x66 ", "")},
+                    instructions[0] + {
+                        "arguments": replace_arguments(
+                            instructions[0].arguments,
+                            ["GPRegisterNative", "MemoryNative"],
+                            ["GPRegister32", "Memory32"]),
+                        "names": split_opcodes(
+                        instructions[0].names?keys,
+                        instructions[0].names,
+                            "0x66 ", "", "")},
+                    instructions[0] + {
+                        "arguments": replace_arguments(
+                            instructions[0].arguments,
+                            ["GPRegisterNative", "MemoryNative"],
+                            ["GPRegister64", "Memory64"]),
+                        "names": split_opcodes(
+                            instructions[0].names?keys,
+                            instructions[0].names,
+                            "SKIP", "SKIP", "0x48 ")}]) +
                 expand_native_arguments(instructions[1..])>
         <#else>
             <#return expand_address_arguments([instructions[0]]) +
@@ -126,8 +168,8 @@
 </#function>
 <#function memory_register_operand arguments>
     <#list arguments as argument>
-        <#if argument == "GPRegister8/Memory8" ||
-             argument == "GPRegisterNative/MemoryNative">
+        <#if element_in_list(argument?keep_after(":"),
+                             ["GPRegister8/Memory8", "GPRegisterNative/MemoryNative"])>
             <#return true>
         </#if>
     </#list>
@@ -176,16 +218,18 @@
     <#if original_instructions?size == 0>
         <#return merged_instructions>
     <#elseif merged_instructions?filter(
-                 x -> same_lists(x.arguments, original_instructions[0].arguments))?size == 0>
-        <#return merge_instruction(merged_instructions + [original_instructions[0]],
-                                   original_instructions[1..])>
+                 x -> same_argument_lists(x.arguments, original_instructions[0].arguments))?size == 0>
+        <#return merge_instruction(merged_instructions + [
+            original_instructions[0] + {"names": original_instructions[0].names?keys}],
+            original_instructions[1..])>
     <#else>
         <#local filtered_names = filter_out_instructions(merged_instructions?filter(
-                    x -> same_lists(x.arguments, original_instructions[0].arguments))?map(
-                    x -> x.names), original_instructions[0].names)>
+                    x -> same_argument_lists(x.arguments, original_instructions[0].arguments))?map(
+                    x -> x.names), original_instructions[0].names?keys)>
         <#if filtered_names?size != 0>
-            <#return merge_instruction(merged_instructions + [original_instructions[0] + {"names":
-                         filtered_names}], original_instructions[1..])>
+            <#return merge_instruction(merged_instructions + [
+                 original_instructions[0] + {"names": filtered_names}],
+                 original_instructions[1..])>
         <#else>
             <#return merge_instruction(merged_instructions, original_instructions[1..])>
         </#if>
@@ -197,7 +241,7 @@
 <#function classname name arguments>
     <#local result>${
         name?capitalize}<#list arguments as argument>${
-        argument_to_class_name[argument]
+        argument_to_class_name[argument?keep_after(":")]
     }</#list></#local>
     <#return result>
 </#function>
@@ -232,17 +276,17 @@ public interface Instruction {
     <#list instruction_class.names as instruction_name>
     final class ${classname(instruction_name, instruction_class.arguments)} implements Instruction {
         <#list instruction_class.arguments as argument>
-        final private ${argument?keep_before("/")} arg${argument?index};
+        final private ${argument?keep_after(":")?keep_before("/")} arg${argument?index};
         </#list>
 
         public ${classname(instruction_name, instruction_class.arguments)}(
         <#list instruction_class.arguments as argument>
-            ${argument?keep_before("/")} arg${argument?index}<#sep>, </#sep>
+            ${argument?keep_after(":")?keep_before("/")} arg${argument?index}<#sep>, </#sep>
         </#list>
                 ) {
         <#list instruction_class.arguments as argument>
             <#if argument?contains("/")>
-            this.arg${argument?index} = new ${argument?keep_before("/")}(
+            this.arg${argument?index} = new ${argument?keep_after(":")?keep_before("/")}(
                 arg${argument?index}, (short)${argument?keep_after("/")});
             <#else>
             this.arg${argument?index} = arg${argument?index};
@@ -269,7 +313,7 @@ public interface Instruction {
         }
 
         <#list instruction_class.arguments as argument>
-        public ${argument?keep_before("/")} getArg${argument?index}() {
+        public ${argument?keep_after(":")?keep_before("/")} getArg${argument?index}() {
             return arg${argument?index};
         }
         </#list>
