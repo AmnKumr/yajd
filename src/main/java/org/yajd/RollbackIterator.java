@@ -16,13 +16,15 @@ package org.yajd;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.Iterator;
 import java.util.Optional;
-import java.util.Stack;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class RollbackIterator<E> extends BufferedIterator<E> {
-    private Stack<E> rollback = null;
+    private Deque<E> rollback = null;
 
     RollbackIterator(Iterator<E> raw_iterator) {
         super(raw_iterator);
@@ -32,18 +34,39 @@ public class RollbackIterator<E> extends BufferedIterator<E> {
     public E next() {
         var e = super.next();
         if (rollback != null) {
-            rollback.push(e);
+            rollback.addLast(e);
         }
         return e;
     }
 
     Optional<?> tryProcess(@NotNull Supplier<Optional<?>> f) {
+        return tryProcess(new ArrayDeque<>(), f);
+    }
+
+    Optional<?> tryProcess(@NotNull Deque<E> processed, @NotNull Supplier<Optional<?>> f) {
         assert rollback == null; // We don't support nested rollbacks.
-        rollback = new Stack<E>();
+        rollback = processed;
         var result = f.get();
         if (result.isEmpty()) {
             while (!rollback.isEmpty()) {
-                putBack(rollback.pop());
+                putBack(rollback.removeLast());
+            }
+            rollback = null;
+        }
+        return result;
+    }
+    Optional<?> tryProcess(@NotNull Function<RollbackIterator<E>, Optional<?>> f) {
+        return tryProcess(new ArrayDeque<>(), f);
+    }
+
+    Optional<?> tryProcess(@NotNull Deque<E> processed,
+                           @NotNull Function<RollbackIterator<E>, Optional<?>> f) {
+        assert rollback == null; // We don't support nested rollbacks.
+        rollback = processed;
+        var result = f.apply(this);
+        if (result.isEmpty()) {
+            while (!rollback.isEmpty()) {
+                putBack(rollback.removeLast());
             }
             rollback = null;
         }
