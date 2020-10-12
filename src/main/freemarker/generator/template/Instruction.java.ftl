@@ -263,6 +263,9 @@ public interface Instruction {
         default Type when(Instruction argument) {
             return null;
         }
+        default Type when(BadInstruction argument) {
+            return when((Instruction) argument);
+        }
 <#list expand_andmerge_instructions(instructions) as instruction_class>
     <#list instruction_class.names as instruction_name>
         default Type when(${classname(instruction_name, instruction_class.arguments)} argument) {
@@ -272,9 +275,35 @@ public interface Instruction {
 </#list>
     }
 
+    final class BadInstruction implements Instruction {
+        final private byte[] bytes;
+        public BadInstruction(byte[] bytes) {
+            this.bytes = bytes;
+        }
+
+        @Override
+        public <Type> Type process(@NotNull Result<Type> result) {
+            return result.when(this);
+        }
+
+        @Contract(pure = true)
+        public @NotNull String getName() {
+            return "BAD";
+        }
+
+        public Argument[] getArguments() {
+            return new Argument[0];
+        }
+
+        byte[] getBytes() {
+            return bytes;
+        }
+    }
+
 <#list expand_andmerge_instructions(instructions) as instruction_class>
     <#list instruction_class.names as instruction_name>
     final class ${classname(instruction_name, instruction_class.arguments)} implements Instruction {
+        final private byte[] bytes;
         <#list instruction_class.arguments as argument>
         final private ${argument?keep_after(":")?keep_before("/")} arg${argument?index};
         </#list>
@@ -282,8 +311,8 @@ public interface Instruction {
         public ${classname(instruction_name, instruction_class.arguments)}(
         <#list instruction_class.arguments as argument>
             ${argument?keep_after(":")?keep_before("/")} arg${argument?index}<#sep>, </#sep>
-        </#list>
-                ) {
+        </#list>,
+                byte[] bytes) {
         <#list instruction_class.arguments as argument>
             <#if argument?contains("/")>
             this.arg${argument?index} = new ${argument?keep_after(":")?keep_before("/")}(
@@ -292,6 +321,7 @@ public interface Instruction {
             this.arg${argument?index} = arg${argument?index};
             </#if>
         </#list>
+            this.bytes = bytes;
         }
 
         @Override
@@ -316,7 +346,12 @@ public interface Instruction {
         public ${argument?keep_after(":")?keep_before("/")} getArg${argument?index}() {
             return arg${argument?index};
         }
+
         </#list>
+
+        byte[] getBytes() {
+            return bytes;
+        }
     }
     </#list>
 </#list>

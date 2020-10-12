@@ -29,29 +29,29 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 public class InstructionTest {
     static Stream<Arguments> TwoArgumentRegisterInstructions() {
-        return Stream.of(arguments(new Instruction.AddReg8Reg8(GPRegister8.AL, GPRegister8.CL),
+        return Stream.of(arguments(new Instruction.AddReg8Reg8(GPRegister8.AL, GPRegister8.CL, null),
                 GPRegister8.AL, GPRegister8.CL),
-                arguments(new Instruction.AddReg16Reg16(GPRegister16.AX, GPRegister16.CX), GPRegister16.AX,
-                        GPRegister16.CX),
-                arguments(new Instruction.AddReg32Reg32(GPRegister32.EAX, GPRegister32.ECX),
+                arguments(new Instruction.AddReg16Reg16(GPRegister16.AX, GPRegister16.CX, null),
+                        GPRegister16.AX, GPRegister16.CX),
+                arguments(new Instruction.AddReg32Reg32(GPRegister32.EAX, GPRegister32.ECX, null),
                         GPRegister32.EAX, GPRegister32.ECX),
-                arguments(new Instruction.AddReg64Reg64(GPRegister64.RAX, GPRegister64.RCX),
+                arguments(new Instruction.AddReg64Reg64(GPRegister64.RAX, GPRegister64.RCX, null),
                         GPRegister64.RAX, GPRegister64.RCX),
-                arguments(new Instruction.MovReg8Reg8(GPRegister8.AL, GPRegister8.CL), GPRegister8.AL,
-                        GPRegister8.CL),
-                arguments(new Instruction.MovReg16Reg16(GPRegister16.AX, GPRegister16.CX), GPRegister16.AX,
-                        GPRegister16.CX),
-                arguments(new Instruction.MovReg32Reg32(GPRegister32.EAX, GPRegister32.ECX),
+                arguments(new Instruction.MovReg8Reg8(GPRegister8.AL, GPRegister8.CL, null),
+                        GPRegister8.AL, GPRegister8.CL),
+                arguments(new Instruction.MovReg16Reg16(GPRegister16.AX, GPRegister16.CX, null),
+                        GPRegister16.AX, GPRegister16.CX),
+                arguments(new Instruction.MovReg32Reg32(GPRegister32.EAX, GPRegister32.ECX, null),
                         GPRegister32.EAX, GPRegister32.ECX),
-                arguments(new Instruction.MovReg64Reg64(GPRegister64.RAX, GPRegister64.RCX),
+                arguments(new Instruction.MovReg64Reg64(GPRegister64.RAX, GPRegister64.RCX, null),
                         GPRegister64.RAX, GPRegister64.RCX),
-                arguments(new Instruction.SubReg8Reg8(GPRegister8.AL, GPRegister8.CL), GPRegister8.AL,
-                        GPRegister8.CL),
-                arguments(new Instruction.SubReg16Reg16(GPRegister16.AX, GPRegister16.CX), GPRegister16.AX,
-                        GPRegister16.CX),
-                arguments(new Instruction.SubReg32Reg32(GPRegister32.EAX, GPRegister32.ECX),
+                arguments(new Instruction.SubReg8Reg8(GPRegister8.AL, GPRegister8.CL, null),
+                        GPRegister8.AL, GPRegister8.CL),
+                arguments(new Instruction.SubReg16Reg16(GPRegister16.AX, GPRegister16.CX, null),
+                        GPRegister16.AX, GPRegister16.CX),
+                arguments(new Instruction.SubReg32Reg32(GPRegister32.EAX, GPRegister32.ECX, null),
                         GPRegister32.EAX, GPRegister32.ECX),
-                arguments(new Instruction.SubReg64Reg64(GPRegister64.RAX, GPRegister64.RCX),
+                arguments(new Instruction.SubReg64Reg64(GPRegister64.RAX, GPRegister64.RCX, null),
                         GPRegister64.RAX, GPRegister64.RCX));
     }
 
@@ -59,24 +59,28 @@ public class InstructionTest {
         return Stream.of(
                 arguments(new Instruction.AddReg8Addr16Mem8(GPRegister8.AL,
                                 new GPAddress16(Optional.of(SegmentRegister.ES), Optional.of(GPRegister16.BX),
-                                        Optional.of(GPRegister16.DI), (short) 1)),
+                                        Optional.of(GPRegister16.DI), (short) 1),
+                                null),
                         GPRegister8.AL, SegmentRegister.ES, GPRegister16.BX, GPRegister16.DI, null, (short) 1,
                         (short) 8),
                 arguments(
                         new Instruction.AddReg16Addr32Mem16(GPRegister16.BX,
                                 new GPAddress32(Optional.of(SegmentRegister.CS), Optional.of(GPRegister32.EAX),
-                                        Optional.of(GPRegister32.ECX), ScaleFactor.X1, 2)),
+                                        Optional.of(GPRegister32.ECX), ScaleFactor.X1, 2),
+                                null),
                         GPRegister16.BX, SegmentRegister.CS, GPRegister32.EAX, GPRegister32.ECX, ScaleFactor.X1,
                         2, (short) 16),
                 arguments(
                         new Instruction.AddReg32Addr64Mem32(GPRegister32.ECX,
                                 new GPAddress64(Optional.of(SegmentRegister.SS), Optional.of(GPRegister64.RDX),
-                                        Optional.of(GPRegister64.RSI), ScaleFactor.X2, 3)),
-                        GPRegister32.ECX, SegmentRegister.SS, GPRegister64.RDX, GPRegister64.RSI, ScaleFactor.X2,
-                        3, (short) 32),
-                arguments(new Instruction.AddReg64EIPAddr32Mem64(GPRegister64.RDX, new EIPAddress32(4)),
+                                        Optional.of(GPRegister64.RSI), ScaleFactor.X2, 3),
+                                null),
+                        GPRegister32.ECX, SegmentRegister.SS, GPRegister64.RDX, GPRegister64.RSI,
+                        ScaleFactor.X2, 3, (short) 32),
+                arguments(
+                        new Instruction.AddReg64EIPAddr32Mem64(GPRegister64.RDX, new EIPAddress32(4),null),
                         GPRegister64.RDX, null, null, null, null, 4, (short) 64),
-                arguments(new Instruction.AddReg8RIPAddr64Mem8(GPRegister8.AH, new RIPAddress64(5)),
+                arguments(new Instruction.AddReg8RIPAddr64Mem8(GPRegister8.AH, new RIPAddress64(5), null),
                         GPRegister8.AH, null, null, null, null, 5, (short) 8));
     }
 
@@ -119,7 +123,7 @@ public class InstructionTest {
     @Test
     @DisplayName("MovReg8Reg8 test")
     void testMovReg8Reg8() {
-        Instruction instruction = new Instruction.MovReg8Reg8(GPRegister8.AL, GPRegister8.CL);
+        Instruction instruction = new Instruction.MovReg8Reg8(GPRegister8.AL, GPRegister8.CL, null);
         var arguments = instruction.getArguments();
         assertEquals(GPRegister8.AL, arguments[0].process(new Argument.Result<GPRegister8>() {
             @Override
@@ -138,7 +142,7 @@ public class InstructionTest {
     @Test
     @DisplayName("MovReg16Reg16 test")
     void testMovReg16Reg16() {
-        Instruction instruction = new Instruction.MovReg16Reg16(GPRegister16.AX, GPRegister16.CX);
+        Instruction instruction = new Instruction.MovReg16Reg16(GPRegister16.AX, GPRegister16.CX, null);
         var arguments = instruction.getArguments();
         assertEquals(GPRegister16.AX, arguments[0].process(new Argument.Result<GPRegister16>() {
             @Override
@@ -157,7 +161,8 @@ public class InstructionTest {
     @Test
     @DisplayName("MovReg32Reg32 test")
     void testMovReg32Reg32() {
-        Instruction instruction = new Instruction.MovReg32Reg32(GPRegister32.EAX, GPRegister32.ECX);
+        Instruction instruction =
+                new Instruction.MovReg32Reg32(GPRegister32.EAX, GPRegister32.ECX, null);
         var arguments = instruction.getArguments();
         assertEquals(GPRegister32.EAX, arguments[0].process(new Argument.Result<GPRegister32>() {
             @Override
@@ -176,7 +181,8 @@ public class InstructionTest {
     @Test
     @DisplayName("MovReg64Reg64 test")
     void testMovReg64Reg64() {
-        Instruction instruction = new Instruction.MovReg64Reg64(GPRegister64.RAX, GPRegister64.RCX);
+        Instruction instruction =
+                new Instruction.MovReg64Reg64(GPRegister64.RAX, GPRegister64.RCX, null);
         var arguments = instruction.getArguments();
         assertEquals(GPRegister64.RAX, arguments[0].process(new Argument.Result<GPRegister64>() {
             @Override
