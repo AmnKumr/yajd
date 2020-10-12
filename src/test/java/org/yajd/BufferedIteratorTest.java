@@ -30,10 +30,12 @@ public class BufferedIteratorTest {
         BufferedIterator<Integer> it = new BufferedIterator<Integer>(
                 Arrays.asList(new Integer[]{1, 2, 3}).iterator());
         assertTrue(it.hasNext());
+        assertEquals(1, it.peek());
         assertEquals(1, it.next());
         assertTrue(it.hasNext());
         assertEquals(2, it.next());
         assertTrue(it.hasNext());
+        assertEquals(3, it.peek());
         assertEquals(3, it.next());
         assertFalse(it.hasNext());
     }

@@ -42,6 +42,15 @@ public class BufferedIterator<E> implements Iterator<E> {
         return raw_iterator.next();
     }
 
+    public E peek() {
+        if (!buffer.isEmpty()) {
+            return buffer.peek();
+        }
+        E e = raw_iterator.next();
+        buffer.push(e);
+        return e;
+    }
+
     public void putBack(E e) {
         buffer.push(e);
     }
