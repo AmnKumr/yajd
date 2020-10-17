@@ -26,7 +26,7 @@ import java.util.function.Supplier;
 public class RollbackIterator<E> extends BufferedIterator<E> {
     private Deque<E> rollback = null;
 
-    RollbackIterator(Iterator<E> raw_iterator) {
+    public RollbackIterator(Iterator<E> raw_iterator) {
         super(raw_iterator);
     }
 
@@ -39,11 +39,11 @@ public class RollbackIterator<E> extends BufferedIterator<E> {
         return e;
     }
 
-    Optional<?> tryProcess(@NotNull Supplier<Optional<?>> f) {
+    public <T> Optional<T> tryProcess(@NotNull Supplier<Optional<T>> f) {
         return tryProcess(new ArrayDeque<>(), f);
     }
 
-    Optional<?> tryProcess(@NotNull Deque<E> processed, @NotNull Supplier<Optional<?>> f) {
+    public <T> Optional<T> tryProcess(@NotNull Deque<E> processed, @NotNull Supplier<Optional<T>> f) {
         assert rollback == null; // We don't support nested rollbacks.
         rollback = processed;
         var result = f.get();

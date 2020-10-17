@@ -20,7 +20,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.yajd.RollbackIterator;
 
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -28,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 public class InstructionTest {
-    static Stream<Arguments> TwoArgumentRegisterInstructions() {
+    static @NotNull Stream<Arguments> twoArgumentRegisterInstructions() {
         return Stream.of(arguments(new Instruction.AddReg8Reg8(GPRegister8.AL, GPRegister8.CL, null),
                 GPRegister8.AL, GPRegister8.CL),
                 arguments(new Instruction.AddReg16Reg16(GPRegister16.AX, GPRegister16.CX, null),
@@ -55,7 +57,7 @@ public class InstructionTest {
                         GPRegister64.RAX, GPRegister64.RCX));
     }
 
-    static Stream<Arguments> TwoArgumentAddressInstructions() {
+    static @NotNull Stream<Arguments> twoArgumentAddressInstructions() {
         return Stream.of(
                 arguments(new Instruction.AddReg8Addr16Mem8(GPRegister8.AL,
                                 new GPAddress16(Optional.of(SegmentRegister.ES), Optional.of(GPRegister16.BX),
@@ -78,17 +80,51 @@ public class InstructionTest {
                         GPRegister32.ECX, SegmentRegister.SS, GPRegister64.RDX, GPRegister64.RSI,
                         ScaleFactor.X2, 3, (short) 32),
                 arguments(
-                        new Instruction.AddReg64EIPAddr32Mem64(GPRegister64.RDX, new EIPAddress32(4),null),
+                        new Instruction.AddReg64EIPAddr32Mem64(GPRegister64.RDX, new EIPAddress32(4), null),
                         GPRegister64.RDX, null, null, null, null, 4, (short) 64),
                 arguments(new Instruction.AddReg8RIPAddr64Mem8(GPRegister8.AH, new RIPAddress64(5), null),
                         GPRegister8.AH, null, null, null, null, 5, (short) 8));
     }
 
+    static @NotNull Stream<Arguments> decIncEncodings() {
+        return Stream.of(
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x48}, "DecReg16", GPRegister16.AX),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x49}, "DecReg16", GPRegister16.CX),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x4a}, "DecReg16", GPRegister16.DX),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x4b}, "DecReg16", GPRegister16.BX),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x4c}, "DecReg16", GPRegister16.SP),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x4d}, "DecReg16", GPRegister16.BP),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x4e}, "DecReg16", GPRegister16.SI),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x4f}, "DecReg16", GPRegister16.DI),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x66, 0x48}, "DecReg32", GPRegister32.EAX),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x48}, "DecReg32", GPRegister32.EAX),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x66, 0x48}, "DecReg16", GPRegister16.AX),
+                arguments(Instruction.Mode.ADDR32_DATA16, new Byte[]{0x48}, "DecReg16", GPRegister16.AX),
+                arguments(Instruction.Mode.ADDR32_DATA16, new Byte[]{0x66, 0x48}, "DecReg32", GPRegister32.EAX),
+                arguments(Instruction.Mode.ADDR32_DATA32, new Byte[]{0x48}, "DecReg32", GPRegister32.EAX),
+                arguments(Instruction.Mode.ADDR32_DATA32, new Byte[]{0x66, 0x48}, "DecReg16", GPRegister16.AX),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x40}, "IncReg16", GPRegister16.AX),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x41}, "IncReg16", GPRegister16.CX),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x42}, "IncReg16", GPRegister16.DX),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x43}, "IncReg16", GPRegister16.BX),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x44}, "IncReg16", GPRegister16.SP),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x45}, "IncReg16", GPRegister16.BP),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x46}, "IncReg16", GPRegister16.SI),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x47}, "IncReg16", GPRegister16.DI),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x66, 0x40}, "IncReg32", GPRegister32.EAX),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x40}, "IncReg32", GPRegister32.EAX),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x66, 0x40}, "IncReg16", GPRegister16.AX),
+                arguments(Instruction.Mode.ADDR32_DATA16, new Byte[]{0x40}, "IncReg16", GPRegister16.AX),
+                arguments(Instruction.Mode.ADDR32_DATA16, new Byte[]{0x66, 0x40}, "IncReg32", GPRegister32.EAX),
+                arguments(Instruction.Mode.ADDR32_DATA32, new Byte[]{0x40}, "IncReg32", GPRegister32.EAX),
+                arguments(Instruction.Mode.ADDR32_DATA32, new Byte[]{0x66, 0x40}, "IncReg16", GPRegister16.AX));
+    }
+
     @ParameterizedTest
-    @MethodSource("TwoArgumentRegisterInstructions")
+    @MethodSource("twoArgumentRegisterInstructions")
     @DisplayName("Two argument register instructions test")
     void testTwoArgumentRegisterInstructions(
-            Instruction instruction, Object argument0, Object argument1) throws Exception {
+            @NotNull Instruction instruction, Object argument0, Object argument1) throws Exception {
         var arg0 = instruction.getClass().getMethod("getArg0").invoke(instruction);
         var arg1 = instruction.getClass().getMethod("getArg1").invoke(instruction);
         assertEquals(argument0, arg0);
@@ -96,9 +132,9 @@ public class InstructionTest {
     }
 
     @ParameterizedTest
-    @MethodSource("TwoArgumentAddressInstructions")
+    @MethodSource("twoArgumentAddressInstructions")
     @DisplayName("Two argument address instructions test")
-    void testTwoArgumentAddressInstructions(Instruction instruction, Object argument0,
+    void testTwoArgumentAddressInstructions(@NotNull Instruction instruction, Object argument0,
                                             SegmentRegister segment, Object base, Object index, Object scale, Object disp, short size)
             throws Exception {
         var arg0 = instruction.getClass().getMethod("getArg0").invoke(instruction);
@@ -193,6 +229,29 @@ public class InstructionTest {
         assertEquals(GPRegister64.RCX, arguments[1].process(new Argument.Result<GPRegister64>() {
             @Override
             public GPRegister64 when(@NotNull GPRegister64 argument) {
+                return argument;
+            }
+        }));
+    }
+
+    @ParameterizedTest
+    @MethodSource("decIncEncodings")
+    @DisplayName("Dec/Inc parse test")
+    void testParseInc(@NotNull Instruction.Mode mode, Byte[] opcodes, String name, Object register) {
+        Optional<Instruction> instruction =
+                Instruction.parse(mode, new RollbackIterator<>(Arrays.asList(opcodes).iterator()));
+        assertEquals(
+                "org.yajd.x86.cpu.Instruction$" + name,
+                instruction.get().getClass().getName());
+        var arguments = instruction.get().getArguments();
+        assertEquals(register, arguments[0].process(new Argument.Result<Object>() {
+            @Override
+            public GPRegister16 when(@NotNull GPRegister16 argument) {
+                return argument;
+            }
+
+            @Override
+            public GPRegister32 when(@NotNull GPRegister32 argument) {
                 return argument;
             }
         }));

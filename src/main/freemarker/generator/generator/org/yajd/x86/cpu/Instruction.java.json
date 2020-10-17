@@ -59,6 +59,13 @@
         }
       },
       {
+        "arguments" : ["Op:GPRegisterNative" ],
+        "names" : {
+          "inc" : "0x40",
+          "dec" : "0x48"
+        }
+      },
+      {
         "arguments" : ["Reg:GPRegisterNative", "Rm:GPRegisterNative/MemoryNative" ],
         "names" : {
           "add" : "0x03",

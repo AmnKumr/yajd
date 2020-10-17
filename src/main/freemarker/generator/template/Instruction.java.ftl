@@ -249,6 +249,16 @@ package ${session.currentProject.model.groupId}.x86.cpu;
 
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+import org.yajd.BufferedIterator;
+import org.yajd.RollbackIterator;
+
+import java.nio.charset.IllegalCharsetNameException;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.Optional;
+import java.util.ServiceConfigurationError;
+
+import static org.apache.commons.lang3.ArrayUtils.toPrimitive;
 
 public interface Instruction {
     @Contract(pure = true)
@@ -355,4 +365,143 @@ public interface Instruction {
     }
     </#list>
 </#list>
+
+    // Note: it would make more sense to make these classes top-level ones, not nested,
+    // but we couldn't do that because of Apache freemarker generator for maven limitation.
+
+    // There are three possible address modes and two possible data modes, but ADDR64_DATA16
+    // is not supported by x86 architecture.
+    enum Mode {
+        ADDR16_DATA16,
+        ADDR16_DATA32,
+        ADDR32_DATA16,
+        ADDR32_DATA32,
+        ADDR64_DATA32;
+
+        public static int addressSize(Mode mode) {
+            switch (mode) {
+                case ADDR16_DATA16:
+                case ADDR16_DATA32:
+                    return 16;
+                case ADDR32_DATA16:
+                case ADDR32_DATA32:
+                    return 32;
+                case ADDR64_DATA32:
+                    return 64;
+                default:
+                    return 0;
+            }
+        }
+
+        public static int operandSize(Mode mode) {
+            switch (mode) {
+                case ADDR16_DATA16:
+                case ADDR32_DATA16:
+                    return 16;
+                case ADDR16_DATA32:
+                case ADDR32_DATA32:
+                    return 32;
+                case ADDR64_DATA32:
+                    return 32;
+                default:
+                    return 0;
+            }
+        }
+    }
+
+    static Optional<Instruction> parse(@NotNull Mode mode, RollbackIterator<Byte> it) {
+        Deque<Byte> deque = new ArrayDeque<Byte>();
+        return it.tryProcess(deque, () -> {
+            // If there are more than one segment prefix then only last one is used.
+            SegmentRegister segment = null;
+            // If there are two or more 0xf2/0xf3 prefixes then only last one is used.
+            byte xf2_xf3_prefix = 0;
+            // Prefixes 0x66, 0x67, or 0xf0 are either present or not.
+            boolean x66_prefix = false;
+            boolean x67_prefix = false;
+            boolean lock_prefix = false;
+
+            scan_prefix: for (; ; ) {
+                if (!it.hasNext()) {
+                    return Optional.empty();
+                }
+                switch (it.peek()) {
+                    case 0x26:
+                        segment = SegmentRegister.ES;
+                        break;
+                    case 0x2e:
+                        segment = SegmentRegister.CS;
+                        break;
+                    case 0x36:
+                        segment = SegmentRegister.SS;
+                        break;
+                    case 0x3e:
+                        segment = SegmentRegister.DS;
+                        break;
+                    case 0x64:
+                        segment = SegmentRegister.FS;
+                        break;
+                    case 0x65:
+                        segment = SegmentRegister.GS;
+                        break;
+                    case 0x66:
+                        x66_prefix = true;
+                        break;
+                    case 0x67:
+                        x67_prefix = true;
+                        break;
+                    case (byte) 0xf0:
+                        lock_prefix = true;
+                        break;
+                    case (byte) 0xf2:
+                        xf2_xf3_prefix = (byte) 0xf2;
+                        break;
+                    case (byte) 0xf3:
+                        xf2_xf3_prefix = (byte) 0xf3;
+                        break;
+                    default:
+                        break scan_prefix;
+                }
+                // Skip prefix.
+                it.next();
+            }
+
+            if (!it.hasNext()) {
+                return Optional.empty();
+            }
+
+            byte rex_prefix = 0;
+            // These instructions are interpreted as REX prefix in ADDR64_DATA32 mode,
+            // inc/dec otherwise.
+            if (0x40 <= it.peek() && it.peek() <= 0x4f) {
+                if (mode == Mode.ADDR64_DATA32) {
+                    rex_prefix = it.next();
+                } else {
+                   if (it.peek() < 0x048) {
+                       if ((Mode.operandSize(mode) == 32) ^ x66_prefix) {
+                           return Optional.of(new IncReg32(
+                                   GPRegister32.of(it.peek() & 0x07),
+                                   toPrimitive(deque.toArray(new Byte[0]))));
+                       } else {
+                           return Optional.of(new IncReg16(
+                                   GPRegister16.of(it.peek() & 0x07),
+                                   toPrimitive(deque.toArray(new Byte[0]))));
+                       }
+                   } else {
+                       if ((Mode.operandSize(mode) == 32) ^ x66_prefix) {
+                           return Optional.of(new DecReg32(
+                                   GPRegister32.of(it.peek() & 0x07),
+                                   toPrimitive(deque.toArray(new Byte[0]))));
+                       } else {
+                           return Optional.of(new DecReg16(
+                                   GPRegister16.of(it.peek() & 0x07),
+                                   toPrimitive(deque.toArray(new Byte[0]))));
+                       }
+                   }
+                }
+            }
+
+            return Optional.empty();
+        });
+    }
 }
