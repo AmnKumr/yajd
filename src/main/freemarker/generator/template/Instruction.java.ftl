@@ -114,15 +114,20 @@
         <#else>
             <#local opcode32 = opcode_32_bit_prefix + names[keys[0]]>
         </#if>
-        <#if opcode_64_bit_prefix == "SKIP">
+        <#if opcode_64_bit_prefix == "SKIP" ||
+             names[keys[0]] == "0x40" ||
+             names[keys[0]] == "0x48">
             <#local opcode64 = "">
         <#else>
             <#local opcode64 = opcode_64_bit_prefix + names[keys[0]]>
         </#if>
         <#return
-            names +
             {keys[0]: opcode16 + "|" + opcode32 + "|" + opcode64} +
-            split_opcodes(keys[1..], names, opcode_16_bit_prefix, opcode_32_bit_prefix, opcode_64_bit_prefix)>
+            split_opcodes(keys[1..],
+                          names,
+                          opcode_16_bit_prefix,
+                          opcode_32_bit_prefix,
+                          opcode_64_bit_prefix)>
     </#if>
 </#function>
 <#function expand_native_arguments instructions>
@@ -137,16 +142,16 @@
                             instructions[0].arguments,
                             ["GPRegisterNative", "MemoryNative"],
                             ["GPRegister16", "Memory16"]),
-                        "names": split_opcodes(
+                        "names": instructions[0].names + split_opcodes(
                             instructions[0].names?keys,
                             instructions[0].names,
-                            "", "0x66 ", "")},
+                            "", "0x66 ", "0x66 ")},
                     instructions[0] + {
                         "arguments": replace_arguments(
                             instructions[0].arguments,
                             ["GPRegisterNative", "MemoryNative"],
                             ["GPRegister32", "Memory32"]),
-                        "names": split_opcodes(
+                        "names": instructions[0].names + split_opcodes(
                         instructions[0].names?keys,
                         instructions[0].names,
                             "0x66 ", "", "")},
@@ -155,7 +160,7 @@
                             instructions[0].arguments,
                             ["GPRegisterNative", "MemoryNative"],
                             ["GPRegister64", "Memory64"]),
-                        "names": split_opcodes(
+                        "names": instructions[0].names + split_opcodes(
                             instructions[0].names?keys,
                             instructions[0].names,
                             "SKIP", "SKIP", "0x48 ")}]) +
@@ -198,7 +203,6 @@
     </#if>
 </#function>
 <#function filter_out_instructions existing_names new_names>
-    <#return []>
     <#if existing_names?size == 0>
         <#return new_names>
     <#elseif new_names?size == 0>
@@ -235,7 +239,7 @@
         </#if>
     </#if>
 </#function>
-<#function expand_andmerge_instructions instructions>
+<#function expand_and_merge_instructions instructions>
     <#return merge_instruction([], expand_memory_register_arguments(instructions))>
 </#function>
 <#function classname name arguments>
@@ -245,6 +249,97 @@
     }</#list></#local>
     <#return result>
 </#function>
+<#function operand_in_opcode arguments>
+    <#if arguments?size == 0>
+        <#return false>
+    <#elseif arguments[0]?starts_with("Op:")>
+        <#return true>
+    <#else>
+        <#return operand_in_opcode(arguments[1..])>
+    </#if>
+</#function>
+<#function generate_opcodes_map opcodes_variant expanded_instruction_classes_list>
+    Note: freemarker documentation says quite explicitly: “Note that hash concatenation is not to
+          be used for many repeated concatenations, like for adding items to a hash inside a loop”.
+    That′s why we first are making a string and then using eval to make a map.
+    <#assign opcodes_map_text>
+        <#list expanded_instruction_classes_list as instruction_class>
+            <#list instruction_class.names as instruction_name, instruction_opcode>
+                <#if instruction_opcode?contains("|")>
+                    <#if instruction_opcode?split("|")[opcodes_variant] != "">
+                        <#local opcode = instruction_opcode?split("|")[opcodes_variant]>
+                    <#else>
+                        <#local opcode = "">
+                    </#if>
+                <#else>
+                    <#local opcode = instruction_opcode>
+                </#if>
+                <#if opcode != "">
+                    <#if operand_in_opcode(instruction_class.arguments)>
+                        <#if opcode?ends_with("0")>
+                            <#local suffixes = ["0", "1", "2", "3", "4", "5", "6", "7"]>
+                        <#else>
+                            <#local suffixes = ["8", "9", "a", "b", "c", "d", "e", "f"]>
+                        </#if>
+                        <#list suffixes as suffix>
+                            "${opcode[0..<(opcode?length-1)]}${suffix}" : {
+                                "name" : "${classname(instruction_name, instruction_class.arguments)}",
+                                "arguments" : ["${instruction_class.arguments?join("\", \"")}"]
+                            },
+                        </#list>
+                    <#else>
+                        "${opcode}" : {
+                            "name" : "${classname(instruction_name, instruction_class.arguments)}",
+                        <#if instruction_class.arguments?size == 0>
+                            "arguments" : []
+                        <#else>
+                            "arguments" : ["${instruction_class.arguments?join("\", \"")}"]
+                        </#if>
+                        },
+                    </#if>
+                </#if>
+            </#list>
+        </#list>
+    </#assign>
+    Evaluate Nop last to make sure it would be choosen over “xchg %ax, %ax”
+    <#assign opcodes_map_text =
+        "{${opcodes_map_text}\"0x90\": { \"name\": \"Nop\", \"arguments\": [] }}"?eval>
+    <#return opcodes_map_text>
+</#function>
+<#function prefix_opcode_map opcode_map>
+    <#assign prefix_map>
+        <#list opcode_map?keys as opcode_key>
+            <#list 0..<opcode_key?split(" ")?size as opcode_piece>
+                "${opcode_key?split(" ")[0..opcode_piece]?join(" ")}" : true,
+            </#list>
+        </#list>
+    </#assign>
+    <#return "{${prefix_map}\"0x90\": true}"?eval>
+</#function>
+<#-- Expand instruction:
+       GPRegisterNative becomes GPRegisterNative16, 32, or 64 depending on prefix -->
+<#assign expanded_instruction_classes_list = expand_memory_register_arguments(instructions)>
+<#-- Merge expanded insructions:
+       Some instructions have more than one encoding, but map to a single Instruction class -->
+<#assign merged_instruction_classes_list = merge_instruction([], expanded_instruction_classes_list)>
+<#-- Opcode maps. Certain instructions use 0x66 to specify “opcode extensions” (e.g. SSE),
+     certain instructions use it to specify instruction width — even SSE instructions, e.g. CRC32.
+
+     The simplest way to handle that is not have separate opcode maps for 16bit data width,
+     32bit data width and ADDR64_DATA32 (which also have 32bit data width by default, but
+     supports 64bit data width with REX.W prefix bit). -->
+<#assign opcode_map_16 = generate_opcodes_map(0, expanded_instruction_classes_list)>
+<#assign opcode_map_32 = generate_opcodes_map(1, expanded_instruction_classes_list)>
+<#assign opcode_map_64 = generate_opcodes_map(2, expanded_instruction_classes_list)>
+<#-- We need to know if it makes sense to continue to parse instruction after certain “prefix”
+     part. For example PF2IW have opcode “0x0f 0x0f 0x1c” where 0x1c part comes in place of
+     immediate. We need to ensure parsing would stop at “0x0f 0x0f”.
+
+     But in some cases prefix is also a valid instruction by itself. E.g. CMPPS have opcode
+     “0x0f 0xc2” yet CMPEQPS have opcode “0x0f 0xc2 0x00” and we need to handle both of these. -->
+<#assign prefix_opcode_map_16 = prefix_opcode_map(opcode_map_16)>
+<#assign prefix_opcode_map_32 = prefix_opcode_map(opcode_map_32)>
+<#assign prefix_opcode_map_64 = prefix_opcode_map(opcode_map_64)>
 package ${session.currentProject.model.groupId}.x86.cpu;
 
 import org.jetbrains.annotations.Contract;
@@ -276,7 +371,7 @@ public interface Instruction {
         default Type when(BadInstruction argument) {
             return when((Instruction) argument);
         }
-<#list expand_andmerge_instructions(instructions) as instruction_class>
+<#list merged_instruction_classes_list as instruction_class>
     <#list instruction_class.names as instruction_name>
         default Type when(${classname(instruction_name, instruction_class.arguments)} argument) {
             return when((Instruction) argument);
@@ -310,7 +405,7 @@ public interface Instruction {
         }
     }
 
-<#list expand_andmerge_instructions(instructions) as instruction_class>
+<#list merged_instruction_classes_list as instruction_class>
     <#list instruction_class.names as instruction_name>
     final class ${classname(instruction_name, instruction_class.arguments)} implements Instruction {
         final private byte[] bytes;
@@ -321,8 +416,7 @@ public interface Instruction {
         public ${classname(instruction_name, instruction_class.arguments)}(
         <#list instruction_class.arguments as argument>
             ${argument?keep_after(":")?keep_before("/")} arg${argument?index}<#sep>, </#sep>
-        </#list>,
-                byte[] bytes) {
+        </#list><#if instruction_class.arguments?size != 0>,</#if> byte[] bytes) {
         <#list instruction_class.arguments as argument>
             <#if argument?contains("/")>
             this.arg${argument?index} = new ${argument?keep_after(":")?keep_before("/")}(

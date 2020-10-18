@@ -43,6 +43,12 @@
     },
     "instructions": [
       {
+        "arguments" : [],
+        "names" : {
+          "nop" : "0x90"
+        }
+      },
+      {
         "arguments" : ["Reg:GPRegister8", "Rm:GPRegister8/Memory8" ],
         "names" : {
           "add" : "0x02",
@@ -68,8 +74,14 @@
       {
         "arguments" : ["Op:GPRegisterNative" ],
         "names" : {
-          "inc" : "0x40",
-          "dec" : "0x48"
+          "dec" : "0x48",
+          "inc" : "0x40"
+        }
+      },
+      {
+        "arguments" : ["AX:GPRegisterNative", "Op:GPRegisterNative"],
+        "names" : {
+          "xchg" : "0x90"
         }
       },
       {
