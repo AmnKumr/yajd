@@ -59,6 +59,13 @@
         }
       },
       {
+        "arguments" : ["Rm:GPRegister8" ],
+        "names" : {
+          "dec" : "0xfe /1",
+          "inc" : "0xfe /0"
+        }
+      },
+      {
         "arguments" : ["Op:GPRegisterNative" ],
         "names" : {
           "inc" : "0x40",
@@ -79,6 +86,13 @@
           "add" : "0x01",
           "mov" : "0x89",
           "sub" : "0x29"
+        }
+      },
+      {
+        "arguments" : ["Rm:GPRegisterNative" ],
+        "names" : {
+          "dec" : "0xff /1",
+          "inc" : "0xff /0"
         }
       }
     ]
