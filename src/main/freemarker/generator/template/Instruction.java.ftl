@@ -347,9 +347,9 @@ import org.jetbrains.annotations.NotNull;
 import org.yajd.BufferedIterator;
 import org.yajd.RollbackIterator;
 
-import java.nio.charset.IllegalCharsetNameException;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.Iterator;
 import java.util.Optional;
 import java.util.ServiceConfigurationError;
 
@@ -396,7 +396,8 @@ public interface Instruction {
             return "BAD";
         }
 
-        public Argument[] getArguments() {
+        @Contract(pure = true)
+        public @NotNull Argument[] getArguments() {
             return new Argument[0];
         }
 
@@ -438,7 +439,7 @@ public interface Instruction {
             return "${instruction_name}";
         }
 
-        public Argument[] getArguments() {
+        public @NotNull Argument[] getArguments() {
             return new Argument[]{
         <#list instruction_class.arguments as argument>
                 arg${argument?index}.toArgument()<#sep>, </#sep>
@@ -472,7 +473,8 @@ public interface Instruction {
         ADDR32_DATA32,
         ADDR64_DATA32;
 
-        public static int addressSize(Mode mode) {
+        @Contract(pure = true)
+        public static int addressSize(@NotNull Mode mode) {
             switch (mode) {
                 case ADDR16_DATA16:
                 case ADDR16_DATA32:
@@ -487,7 +489,8 @@ public interface Instruction {
             }
         }
 
-        public static int operandSize(Mode mode) {
+        @Contract(pure = true)
+        public static int operandSize(@NotNull Mode mode) {
             switch (mode) {
                 case ADDR16_DATA16:
                 case ADDR32_DATA16:
@@ -503,7 +506,7 @@ public interface Instruction {
         }
     }
 
-    static Optional<Instruction> parse(@NotNull Mode mode, RollbackIterator<Byte> it) {
+    static Optional<Instruction> parse(@NotNull Mode mode, @NotNull RollbackIterator<Byte> it) {
         Deque<Byte> deque = new ArrayDeque<Byte>();
         return it.tryProcess(deque, () -> {
             // If there are more than one segment prefix then only last one is used.
@@ -597,5 +600,216 @@ public interface Instruction {
 
             return Optional.empty();
         });
+    }
+
+    /* Note: GPAddress16 is not supported in ADDR64_DATA32 mode thus REX support is not needed */
+    static Optional<GPAddress16> parseGPAddress16(@NotNull Optional<SegmentRegister> segment,
+                                                  @NotNull Iterator<Byte> it) {
+        if (!it.hasNext()) {
+            return Optional.empty();
+        }
+        byte modrm = it.next();
+        assert (modrm & 0b11_000_000) != 0b11_000_000;
+        if ((modrm & 0b11_000_111) == 0b00_000_110) {
+            Optional<Short> disp16 = parseShort(it);
+            if (disp16.isPresent()) {
+                return Optional.of(new GPAddress16(
+                        segment, Optional.empty(), Optional.empty(), disp16.get()));
+            }
+            return Optional.empty();
+        }
+        short disp = 0;
+        if ((modrm & 0b11_000_000) == 0b01_000_000) {
+            if (!it.hasNext()) {
+                return Optional.empty();
+            }
+            disp = it.next();
+        } else if ((modrm & 0b11_000_000) == 0b10_000_000) {
+            Optional<Short> disp16 = parseShort(it);
+            if (disp16.isEmpty()) {
+                return Optional.empty();
+            }
+            disp = disp16.get();
+        }
+        return Optional.of(new GPAddress16(
+                segment,
+                base_by_rm[modrm & 0b00_000_111],
+                index_by_rm[modrm & 0b00_000_111],
+                disp));
+    }
+
+    Optional<GPRegister16>[] base_by_rm = new Optional[]{
+            Optional.of(GPRegister16.BX),
+            Optional.of(GPRegister16.BX),
+            Optional.of(GPRegister16.BP),
+            Optional.of(GPRegister16.BP),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.of(GPRegister16.BP),
+            Optional.of(GPRegister16.BX)
+    };
+
+    Optional<GPRegister16>[] index_by_rm = new Optional[]{
+            Optional.of(GPRegister16.SI),
+            Optional.of(GPRegister16.DI),
+            Optional.of(GPRegister16.SI),
+            Optional.of(GPRegister16.DI),
+            Optional.of(GPRegister16.SI),
+            Optional.of(GPRegister16.DI),
+            Optional.empty(),
+            Optional.empty()
+    };
+
+<#list [32, 64] as AddrSize>
+    static Optional<GPAddress${AddrSize}> parseGPAddress${AddrSize}(
+            @NotNull Optional<SegmentRegister> segment,
+            byte rex,
+            @NotNull Iterator<Byte> it) {
+        if (!it.hasNext()) {
+            return Optional.empty();
+        }
+        byte modrm = it.next();
+        assert (modrm & 0b11_000_000) != 0b11_000_000;
+        Optional<GPRegister${AddrSize}> base = Optional.empty();
+        Optional<GPRegister${AddrSize}> index = Optional.empty();
+        ScaleFactor scale = ScaleFactor.X1;
+        int disp = 0;
+        if ((modrm & 0b11_000_111) == 0b00_000_101) {
+            Optional<Integer> disp32 = parseInteger(it);
+            if (disp32.isEmpty()) {
+                return Optional.empty();
+            }
+            disp = disp32.get();
+        } else if ((modrm & 0b00_000_111) != 0b00_000_100) {
+            base = Optional.of(GPRegister${AddrSize}.of(
+                    (modrm & 0b00_000_111) | ((rex & 0b00_000_001) << 3)));
+            if ((modrm & 0b11_000_000) == 0b01_000_000) {
+                if (!it.hasNext()) {
+                    return Optional.empty();
+                }
+                disp = it.next();
+            } else if ((modrm & 0b11_000_000) == 0b10_000_000) {
+                Optional<Integer> disp32 = parseInteger(it);
+                if (disp32.isEmpty()) {
+                    return Optional.empty();
+                }
+                disp = disp32.get();
+            }
+        } else if (!it.hasNext()) {
+            return Optional.empty();
+        } else {
+            byte sib = it.next();
+            scale = ScaleFactor.of((sib & 0x11_000_000) >>> 6);
+            if (((modrm & 0b11_000_000) == 0b00_000_000) &&
+                    ((sib & 0b00_000_111) == 0b00_000_101)) {
+                Optional<Integer> disp32 = parseInteger(it);
+                if (disp32.isEmpty()) {
+                    return Optional.empty();
+                }
+                disp = disp32.get();
+            } else {
+                base = Optional.of(GPRegister${AddrSize}.of(
+                        (sib & 0b00_000_111) | ((rex & 0b0000_0_0_0_1) << 3)));
+                if ((modrm & 0b11_000_000) == 0b01_000_000) {
+                    if (!it.hasNext()) {
+                        return Optional.empty();
+                    }
+                    disp = it.next();
+                } else if ((modrm & 0b11_000_000) == 0b10_000_000) {
+                    Optional<Integer> disp32 = parseInteger(it);
+                    if (disp32.isEmpty()) {
+                        return Optional.empty();
+                    }
+                    disp = disp32.get();
+                }
+            }
+            var idx = GPRegister${AddrSize}.of(
+                    ((sib & 0b00_111_000) >>> 3) | ((rex & 0b0000_0_0_1_0) << 2));
+            if (idx == GPRegister${AddrSize}.<#if AddrSize == 32>ESP<#else>RSP</#if>) {
+                index = Optional.empty();
+            } else {
+                index = Optional.of(idx);
+            }
+        }
+        return Optional.of(new GPAddress${AddrSize}(segment, base, index, scale, disp));
+    }
+</#list>
+
+    static Optional<Short> parseShort(@NotNull Iterator<Byte> it) {
+        if (!it.hasNext()) {
+            return Optional.empty();
+        }
+        byte low_byte = it.next();
+        if (!it.hasNext()) {
+            return Optional.empty();
+        }
+        byte high_byte = it.next();
+        return Optional.of((short)((high_byte << 8) | low_byte));
+    }
+
+    static Optional<Integer> parseInteger(@NotNull Iterator<Byte> it) {
+        if (!it.hasNext()) {
+            return Optional.empty();
+        }
+        byte low_byte = it.next();
+        if (!it.hasNext()) {
+            return Optional.empty();
+        }
+        byte second_byte = it.next();
+        if (!it.hasNext()) {
+            return Optional.empty();
+        }
+        byte third_byte = it.next();
+        if (!it.hasNext()) {
+            return Optional.empty();
+        }
+        byte high_byte = it.next();
+        return Optional.of((int)((high_byte << 24) |
+                                 (third_byte << 16) |
+                                 (second_byte << 8) |
+                                 low_byte));
+    }
+
+    static Optional<Long> parseLong(@NotNull Iterator<Byte> it) {
+        if (!it.hasNext()) {
+            return Optional.empty();
+        }
+        byte low_byte = it.next();
+        if (!it.hasNext()) {
+            return Optional.empty();
+        }
+        byte second_byte = it.next();
+        if (!it.hasNext()) {
+            return Optional.empty();
+        }
+        byte third_byte = it.next();
+        if (!it.hasNext()) {
+            return Optional.empty();
+        }
+        byte fourth_byte = it.next();
+        if (!it.hasNext()) {
+            return Optional.empty();
+        }
+        byte fifth_byte = it.next();
+        if (!it.hasNext()) {
+            return Optional.empty();
+        }
+        byte sixth_byte = it.next();
+        if (!it.hasNext()) {
+            return Optional.empty();
+        }
+        byte seventh_byte = it.next();
+        if (!it.hasNext()) {
+            return Optional.empty();
+        }
+        byte high_byte = it.next();
+        return Optional.of((long)((high_byte << 56L) |
+                                  (seventh_byte << 48L) |
+                                  (sixth_byte << 40L) |
+                                  (fifth_byte << 32L) |
+                                  (fourth_byte << 24) |
+                                  (third_byte << 16) |
+                                  (second_byte << 8) |
+                                  low_byte));
     }
 }
