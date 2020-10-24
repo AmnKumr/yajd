@@ -152,8 +152,8 @@
                             ["GPRegisterNative", "MemoryNative"],
                             ["GPRegister32", "Memory32"]),
                         "names": instructions[0].names + split_opcodes(
-                        instructions[0].names?keys,
-                        instructions[0].names,
+                            instructions[0].names?keys,
+                            instructions[0].names,
                             "0x66 ", "", "")},
                     instructions[0] + {
                         "arguments": replace_arguments(
@@ -180,6 +180,28 @@
     </#list>
     <#return false>
 </#function>
+<#function regmem_opcodes keys names reg_mem_marker>
+    <#if keys?size == 0>
+        <#return {}>
+    <#else>
+        <#if names[keys[0]]?contains("/")>
+            <#local opcode =
+                names[keys[0]]?keep_before_last("/") +
+                reg_mem_marker +
+                " /" +
+                names[keys[0]]?keep_after_last("/")>
+        <#elseif names[keys[0]]?contains("+")>
+            <#local opcode =
+            names[keys[0]]?keep_before_last("+") +
+            reg_mem_marker +
+            " +" +
+            names[keys[0]]?keep_after_last("+")>
+        <#else>
+            <#local opcode = names[keys[0]] + reg_mem_marker>
+        </#if>
+        <#return {keys[0]: opcode} + regmem_opcodes(keys[1..], names, reg_mem_marker)>
+    </#if>
+</#function>
 <#function expand_memory_register_arguments instructions>
     <#if instructions?size == 0>
         <#return []>
@@ -187,14 +209,22 @@
         <#if memory_register_operand(instructions[0].arguments)>
             <#return
                 expand_native_arguments(
-                    [instructions[0] + {"arguments": replace_arguments(
-                        instructions[0].arguments,
-                        ["GPRegister8/Memory8", "GPRegisterNative/MemoryNative"],
-                        ["GPRegister8", "GPRegisterNative"])}] +
-                    [instructions[0] + {"arguments": replace_arguments(
-                        instructions[0].arguments,
-                        ["GPRegister8/Memory8", "GPRegisterNative/MemoryNative"],
-                        ["Memory8", "MemoryNative"])}]) +
+                    [instructions[0] + {
+                        "arguments": replace_arguments(
+                            instructions[0].arguments,
+                            ["GPRegister8/Memory8", "GPRegisterNative/MemoryNative"],
+                            ["GPRegister8", "GPRegisterNative"]),
+                        "names": instructions[0].names + regmem_opcodes(
+                            instructions[0].names?keys,
+                            instructions[0].names, "/r")}] +
+                    [instructions[0] + {
+                        "arguments": replace_arguments(
+                            instructions[0].arguments,
+                            ["GPRegister8/Memory8", "GPRegisterNative/MemoryNative"],
+                            ["Memory8", "MemoryNative"]),
+                        "names": instructions[0].names + regmem_opcodes(
+                        instructions[0].names?keys,
+                        instructions[0].names, "/m")}]) +
                 expand_memory_register_arguments(instructions[1..])>
         <#else>
             <#return expand_native_arguments([instructions[0]]) +
@@ -309,7 +339,7 @@
 <#function prefix_opcode_map opcode_map>
     <#assign prefix_map>
         <#list opcode_map?keys as opcode_key>
-            <#list 0..<opcode_key?split(" ")?size as opcode_piece>
+            <#list 0..<opcode_key?split(" ")?size-1 as opcode_piece>
                 "${opcode_key?split(" ")[0..opcode_piece]?join(" ")}" : true,
             </#list>
         </#list>
