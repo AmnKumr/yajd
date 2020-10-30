@@ -54,7 +54,15 @@
 <#function address_operand arguments>
     <#list arguments as argument>
         <#if element_in_list(argument?keep_after(":"),
-                             ["Memory8", "Memory16", "Memory32", "Memory64"])>
+                             ["Memory8", "Memory16", "Memory32", "x64Memory"])>
+            <#return true>
+        </#if>
+    </#list>
+    <#return false>
+</#function>
+<#function address64_operand arguments>
+    <#list arguments as argument>
+        <#if argument?keep_after(":") == "x64Memory">
             <#return true>
         </#if>
     </#list>
@@ -65,28 +73,31 @@
         <#return []>
     <#else>
         <#if address_operand(instructions[0].arguments)>
-            <#return
+            <#local result =
                 [instructions[0] + {"arguments": replace_arguments(
                     instructions[0].arguments,
-                    ["Memory8", "Memory16", "Memory32", "Memory64"],
-                    ["GPAddress16/8", "GPAddress16/16", "GPAddress16/32", "GPAddress16/64"])}] +
-                [instructions[0] + {"arguments": replace_arguments(
-                    instructions[0].arguments,
-                    ["Memory8", "Memory16", "Memory32", "Memory64"],
+                    ["Memory8", "Memory16", "Memory32", "x64Memory"],
                     ["GPAddress32/8", "GPAddress32/16", "GPAddress32/32", "GPAddress32/64"])}] +
                 [instructions[0] + {"arguments": replace_arguments(
                     instructions[0].arguments,
-                    ["Memory8", "Memory16", "Memory32", "Memory64"],
+                    ["Memory8", "Memory16", "Memory32", "x64Memory"],
                     ["EIPAddress32/8", "EIPAddress32/16", "EIPAddress32/32", "EIPAddress32/64"])}] +
                 [instructions[0] + {"arguments": replace_arguments(
                     instructions[0].arguments,
-                    ["Memory8", "Memory16", "Memory32", "Memory64"],
+                    ["Memory8", "Memory16", "Memory32", "x64Memory"],
                     ["GPAddress64/8", "GPAddress64/16", "GPAddress64/32", "GPAddress64/64"])}] +
                 [instructions[0] + {"arguments": replace_arguments(
                     instructions[0].arguments,
-                    ["Memory8", "Memory16", "Memory32", "Memory64"],
-                    ["RIPAddress64/8", "RIPAddress64/16", "RIPAddress64/32", "RIPAddress64/64"])}] +
-                expand_native_arguments(instructions[1..])>
+                    ["Memory8", "Memory16", "Memory32", "x64Memory"],
+                    ["RIPAddress64/8", "RIPAddress64/16", "RIPAddress64/32", "RIPAddress64/64"])}]>
+            <#if !address64_operand(instructions[0].arguments)>
+                <#local result = result +
+                    [instructions[0] + {"arguments": replace_arguments(
+                        instructions[0].arguments,
+                        ["Memory8", "Memory16", "Memory32"],
+                        ["GPAddress16/8", "GPAddress16/16", "GPAddress16/32"])}]>
+            </#if>
+            <#return result + expand_native_arguments(instructions[1..])>
         <#else>
             <#return [instructions[0]] + expand_native_arguments(instructions[1..])>
         </#if>
@@ -159,7 +170,7 @@
                         "arguments": replace_arguments(
                             instructions[0].arguments,
                             ["GPRegisterNative", "MemoryNative"],
-                            ["GPRegister64", "Memory64"]),
+                            ["GPRegister64", "x64Memory"]),
                         "names": instructions[0].names + split_opcodes(
                             instructions[0].names?keys,
                             instructions[0].names,
@@ -186,18 +197,18 @@
     <#else>
         <#if names[keys[0]]?contains("/")>
             <#local opcode =
-                names[keys[0]]?keep_before_last("/") +
+                names[keys[0]]?keep_before_last("/") + " " +
                 reg_mem_marker +
                 " /" +
                 names[keys[0]]?keep_after_last("/")>
         <#elseif names[keys[0]]?contains("+")>
             <#local opcode =
-            names[keys[0]]?keep_before_last("+") +
+            names[keys[0]]?keep_before_last("+") + " " +
             reg_mem_marker +
             " +" +
             names[keys[0]]?keep_after_last("+")>
         <#else>
-            <#local opcode = names[keys[0]] + reg_mem_marker>
+            <#local opcode = names[keys[0]] + " " + reg_mem_marker>
         </#if>
         <#return {keys[0]: opcode} + regmem_opcodes(keys[1..], names, reg_mem_marker)>
     </#if>
@@ -527,7 +538,6 @@ public interface Instruction {
                     return 16;
                 case ADDR16_DATA32:
                 case ADDR32_DATA32:
-                    return 32;
                 case ADDR64_DATA32:
                     return 32;
                 default:
