@@ -381,6 +381,87 @@
 <#assign prefix_opcode_map_16 = prefix_opcode_map(opcode_map_16)>
 <#assign prefix_opcode_map_32 = prefix_opcode_map(opcode_map_32)>
 <#assign prefix_opcode_map_64 = prefix_opcode_map(opcode_map_64)>
+<#-- Opcodes are typically one-byte on x86. To process these we need a list of all possible
+     byte values.  But freemarker doesn't make it easy to create one. -->
+<#assign byte_vaues = [
+    "00", "01", "02", "03", "04", "05", "06", "07", "08", "09", "0a", "0b", "0c", "0d", "0e", "0f",
+    "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "1a", "1b", "1c", "1d", "1e", "1f",
+    "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "2a", "2b", "2c", "2d", "2e", "2f",
+    "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "3a", "3b", "3c", "3d", "3e", "3f",
+    "40", "41", "42", "43", "44", "45", "46", "47", "48", "49", "4a", "4b", "4c", "4d", "4e", "4f",
+    "50", "51", "52", "53", "54", "55", "56", "57", "58", "59", "5a", "5b", "5c", "5d", "5e", "5f",
+    "60", "61", "62", "63", "64", "65", "66", "67", "68", "69", "6a", "6b", "6c", "6d", "6e", "6f",
+    "70", "71", "72", "73", "74", "75", "76", "77", "78", "79", "7a", "7b", "7c", "7d", "7e", "7f",
+    "80", "81", "82", "83", "84", "85", "86", "87", "88", "89", "8a", "8b", "8c", "8d", "8e", "8f",
+    "90", "91", "92", "93", "94", "95", "96", "97", "98", "99", "9a", "9b", "9c", "9d", "9e", "9f",
+    "a0", "a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8", "a9", "aa", "ab", "ac", "ad", "ae", "af",
+    "b0", "b1", "b2", "b3", "b4", "b5", "b6", "b7", "b8", "b9", "ba", "bb", "bc", "bd", "be", "bf",
+    "c0", "c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9", "ca", "cb", "cc", "cd", "ce", "cf",
+    "d0", "d1", "d2", "d3", "d4", "d5", "d6", "d7", "d8", "d9", "da", "db", "dc", "dd", "de", "df",
+    "e0", "e1", "e2", "e3", "e4", "e5", "e6", "e7", "e8", "e9", "ea", "eb", "ec", "ed", "ee", "ef",
+    "f0", "f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8", "f9", "fa", "fb", "fc", "fd", "fe", "ff"
+]>
+<#function value_to_byte value>
+    <#-- Note: freemarker doesn't have a lexicogrphical comparison for strings… use hash instead… -->
+    <#return {
+        '0':"0x",
+        '1':"0x",
+        '2':"0x",
+        '3':"0x",
+        '4':"0x",
+        '5':"0x",
+        '6':"0x",
+        '7':"0x",
+        '8':"(byte)0x",
+        '9':"(byte)0x",
+        'a':"(byte)0x",
+        'b':"(byte)0x",
+        'c':"(byte)0x",
+        'd':"(byte)0x",
+        'e':"(byte)0x",
+        'f':"(byte)0x"
+    }[value[0]] + value>
+</#function>
+<#function argument_in_opcode instruction>
+    <#list instruction.arguments as argument>
+        <#if argument?starts_with("Op:")>
+            <#return true>
+        </#if>
+    </#list>
+    <#return false>
+</#function>
+<#macro argument_from_opcode instruction opcode_var rex_prefix>
+    <#list instruction.arguments as argument>
+        <#if argument?starts_with("Op:")
+            >${argument?keep_after(":")
+                }.of(${opcode_var} & 0b00_000_111 | (${rex_prefix} & 0b0000_0_0_0_1) << 3)</#if
+        >
+    </#list>
+</#macro>
+<#function has_implicit_argument instruction>
+    <#list instruction.arguments as argument>
+        <#if argument?starts_with("AX:")>
+            <#return true>
+        </#if>
+    </#list>
+    <#return false>
+</#function>
+<#macro implicit_argument instruction>
+    <#list instruction.arguments as argument>
+        <#if argument?starts_with("AX:")
+            >${{"GPRegister8": "GPRegister8.AL",
+                "GPRegister16": "GPRegister16.AX",
+                "GPRegister32": "GPRegister32.EAX",
+                "GPRegister64": "GPRegister64.RAX"}[argument?keep_after(":")]}</#if
+        >
+    </#list>
+</#macro>
+<#macro make_instruction instruction>
+Optional.of(new ${instruction.name}(<#list instruction.arguments as argument
+    >${{"AX": "implicit_argument",
+        "Op": "opcode_argument"}[argument?keep_before(":")]}, </#list
+    >toPrimitive(deque.toArray(empty_byte_array))))</#macro
+>
 package ${session.currentProject.model.groupId}.x86.cpu;
 
 import org.jetbrains.annotations.Contract;
@@ -393,6 +474,7 @@ import java.util.Deque;
 import java.util.Iterator;
 import java.util.Optional;
 import java.util.ServiceConfigurationError;
+import java.util.function.Supplier;
 
 import static org.apache.commons.lang3.ArrayUtils.toPrimitive;
 
@@ -608,39 +690,126 @@ public interface Instruction {
             }
 
             byte rex_prefix = 0;
-            // These instructions are interpreted as REX prefix in ADDR64_DATA32 mode,
-            // inc/dec otherwise.
-            if (0x40 <= it.peek() && it.peek() <= 0x4f) {
-                if (mode == Mode.ADDR64_DATA32) {
+            if (mode == Mode.ADDR64_DATA32) {
+                if (0x40 <= it.peek() && it.peek() <= 0x4f) {
                     rex_prefix = it.next();
-                } else {
-                   if (it.peek() < 0x048) {
-                       if ((Mode.operandSize(mode) == 32) ^ x66_prefix) {
-                           return Optional.of(new IncReg32(
-                                   GPRegister32.of(it.peek() & 0x07),
-                                   toPrimitive(deque.toArray(new Byte[0]))));
-                       } else {
-                           return Optional.of(new IncReg16(
-                                   GPRegister16.of(it.peek() & 0x07),
-                                   toPrimitive(deque.toArray(new Byte[0]))));
-                       }
-                   } else {
-                       if ((Mode.operandSize(mode) == 32) ^ x66_prefix) {
-                           return Optional.of(new DecReg32(
-                                   GPRegister32.of(it.peek() & 0x07),
-                                   toPrimitive(deque.toArray(new Byte[0]))));
-                       } else {
-                           return Optional.of(new DecReg16(
-                                   GPRegister16.of(it.peek() & 0x07),
-                                   toPrimitive(deque.toArray(new Byte[0]))));
-                       }
-                   }
+                    if (!it.hasNext()) {
+                        return Optional.empty();
+                    }
                 }
             }
-
-            return Optional.empty();
+            // Lambdas can only access final or effectively final variables.
+            // Copy collected prefixes into final varaibles.
+            final byte final_rex_prefix = rex_prefix;
+            final SegmentRegister final_segment = segment;
+            final byte final_xf2_xf3_prefix = xf2_xf3_prefix;
+            final boolean final_x66_prefix = x66_prefix;
+            final boolean final_x67_prefix = x67_prefix;
+            final boolean final_lock_prefix = lock_prefix;
+            final byte opcode = it.next();
+<#list [64, 32, 16] as NativeOperandSize>
+    <@"<#assign opcode_map = opcode_map_${NativeOperandSize}>"?interpret />
+    <@"<#assign prefix_opcode_map = prefix_opcode_map_${NativeOperandSize}>"?interpret />
+            Supplier<Optional<Instruction>> parse_${NativeOperandSize}bit_instruction = () -> {
+    <#list ["", "0x66"] as X66Prefix>
+        <#list ["", "0xf2", "0xf3"] as Xf2Xf3Prefix>
+            <#if X66Prefix == "">
+                <#if Xf2Xf3Prefix == "">
+                    <#assign opcode_prefix>0x</#assign>
+                <#else>
+                    <#assign opcode_prefix>${Xf2Xf3Prefix} 0x</#assign>
+                </#if>
+            <#else>
+                <#if Xf2Xf3Prefix == "">
+                    <#assign opcode_prefix>${X66Prefix} 0x</#assign>
+                <#else>
+                    <#assign opcode_prefix>${X66Prefix} ${Xf2Xf3Prefix} 0x</#assign>
+                </#if>
+            </#if>
+            <#if NativeOperandSize == 64>
+                <#assign opcode_prefix>${opcode_prefix}48 0x</#assign>
+            </#if>
+                Supplier<Optional<Instruction>> parse_${X66Prefix}_${Xf2Xf3Prefix}_instruction = () -> {
+                    switch (opcode) {
+            <#list byte_vaues?filter(x -> !element_in_list(x, ["0x48", "0x66", "0xf2", "0xf3"]))
+                   as opcode_value>
+                <#if opcode_map[opcode_prefix + opcode_value]?? ||
+                     prefix_opcode_map[opcode_prefix + opcode_value]??>
+                        case ${value_to_byte(opcode_value)}:
+                    <#-- Handle register operant in opcode -->
+                    <#if opcode_map[opcode_prefix + opcode_value]??>
+                        <#assign instruction = opcode_map[opcode_prefix + opcode_value]>
+                        <#if argument_in_opcode(instruction)>
+                            <#-- Instructions with operands in opcode would occupy case lines -->
+                            <#if opcode_value[1] == '7' || opcode_value[1] == 'f'>
+                            {
+                                var opcode_argument = <@argument_from_opcode
+                                   instruction "opcode" "final_rex_prefix"/>;
+                                <#if has_implicit_argument(instruction)>
+                                var implicit_argument = <@implicit_argument instruction/>;
+                                </#if>
+                                return <@make_instruction instruction/>;
+                            }
+                            <#else>
+                            /* fallthrough */
+                            </#if>
+                        <#else>
+                            <#if opcode_prefix + opcode_value == "0x90">
+                            // If there are REX.B prefix then 0x90 is not interpreted as NOP, but as Xchg.
+                            // Note: objdump erroneously decodes, e.g., 0x40 0x90 as xchg - but that one is actually NOP.
+                            if ((final_rex_prefix & 0b0000_0_0_0_1) == 0)
+                            </#if>
+                            {
+                                <#if has_implicit_argument(instruction)>
+                                var implicit_argument = <@implicit_argument instruction/>;
+                                </#if>
+                                return <@make_instruction instruction/>;
+                            }
+                            <#if opcode_prefix + opcode_value == "0x90">
+                            /* fallthrough */
+                            </#if>
+                        </#if>
+                    </#if>
+                </#if>
+            </#list>
+                        default:
+                            return Optional.empty();
+                    }
+                };
+        </#list>
+    </#list>
+                if (final_x66_prefix) {
+                    if (final_xf2_xf3_prefix == (byte) 0xf2) {
+                        return parse_0x66_0xf2_instruction.get();
+                    } else if (final_xf2_xf3_prefix == (byte) 0xf3) {
+                        return parse_0x66_0xf3_instruction.get();
+                    } else {
+                        return parse_0x66__instruction.get();
+                    }
+                } else {
+                    if (final_xf2_xf3_prefix == (byte) 0xf2) {
+                        return parse__0xf2_instruction.get();
+                    } else if (final_xf2_xf3_prefix == (byte) 0xf3) {
+                        return parse__0xf3_instruction.get();
+                    } else {
+                        return parse___instruction.get();
+                    }
+                }
+            };
+</#list>
+            if ((rex_prefix & 0b000_1_0_0_0) != 0) {
+                return parse_64bit_instruction.get();
+            } else if (Mode.operandSize(mode) == 32) {
+                return parse_32bit_instruction.get();
+            } else {
+                return parse_16bit_instruction.get();
+            }
         });
     }
+
+    // Deque toArray ABI needs an empty byte array.
+    // Make one and keep it here to avoid calling new again and again.
+    Byte[] empty_byte_array = new Byte[0];
 
     /* Note: GPAddress16 is not supported in ADDR64_DATA32 mode thus REX support is not needed */
     static Optional<GPAddress16> parseGPAddress16(@NotNull Optional<SegmentRegister> segment,
