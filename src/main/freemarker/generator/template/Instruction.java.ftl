@@ -77,19 +77,19 @@
                 [instructions[0] + {"arguments": replace_arguments(
                     instructions[0].arguments,
                     ["Memory8", "Memory16", "Memory32", "x64Memory"],
-                    ["GPAddress32/8", "GPAddress32/16", "GPAddress32/32", "GPAddress32/64"])}] +
-                [instructions[0] + {"arguments": replace_arguments(
-                    instructions[0].arguments,
-                    ["Memory8", "Memory16", "Memory32", "x64Memory"],
                     ["EIPAddress32/8", "EIPAddress32/16", "EIPAddress32/32", "EIPAddress32/64"])}] +
                 [instructions[0] + {"arguments": replace_arguments(
                     instructions[0].arguments,
                     ["Memory8", "Memory16", "Memory32", "x64Memory"],
-                    ["GPAddress64/8", "GPAddress64/16", "GPAddress64/32", "GPAddress64/64"])}] +
+                    ["GPAddress32/8", "GPAddress32/16", "GPAddress32/32", "GPAddress32/64"])}] +
                 [instructions[0] + {"arguments": replace_arguments(
                     instructions[0].arguments,
                     ["Memory8", "Memory16", "Memory32", "x64Memory"],
-                    ["RIPAddress64/8", "RIPAddress64/16", "RIPAddress64/32", "RIPAddress64/64"])}]>
+                    ["RIPAddress64/8", "RIPAddress64/16", "RIPAddress64/32", "RIPAddress64/64"])}] +
+                [instructions[0] + {"arguments": replace_arguments(
+                    instructions[0].arguments,
+                    ["Memory8", "Memory16", "Memory32", "x64Memory"],
+                    ["GPAddress64/8", "GPAddress64/16", "GPAddress64/32", "GPAddress64/64"])}]>
             <#if !address64_operand(instructions[0].arguments)>
                 <#local result = result +
                     [instructions[0] + {"arguments": replace_arguments(
@@ -434,7 +434,7 @@
     <#list instruction.arguments as argument>
         <#if argument?starts_with("Op:")
             >${argument?keep_after(":")
-                }.of(${opcode_var} & 0b00_000_111 | (${rex_prefix} & 0b0000_0_0_0_1) << 3)</#if
+                }.of((${opcode_var} & 0b00_000_111) | ((${rex_prefix} & 0b0000_0_0_0_1) << 3))</#if
         >
     </#list>
 </#macro>
@@ -456,12 +456,50 @@
         >
     </#list>
 </#macro>
-<#macro make_instruction instruction>
-Optional.of(new ${instruction.name}(<#list instruction.arguments as argument
+<#macro reg_argument instruction modrm_var rex_prefix>
+    <#list instruction.arguments as argument>
+        <#if argument?starts_with("Reg:")
+            >${argument?keep_after(":")
+                }.of(((${modrm_var} & 0b000_111_000) >> 3) | ((${rex_prefix} & 0b0000_0_1_0_0) << 1)<#if
+                argument?keep_after(":") == "GPRegister8">, ${rex_prefix} != 0</#if>)</#if
+        >
+    </#list>
+</#macro>
+<#macro rm_argument instruction modrm_var rex_prefix>
+    <#list instruction.arguments as argument>
+        <#if argument?starts_with("Rm:")
+            >${argument?keep_after(":")
+                }.of((${modrm_var} & 0b000_000_111) | ((${rex_prefix} & 0b0000_0_0_0_1) << 3)<#if
+                argument?keep_after(":") == "GPRegister8">, ${rex_prefix} != 0</#if>)</#if
+        >
+    </#list>
+</#macro>
+<#macro make_instruction_with_name instruction_name instruction>
+Optional.of(new ${instruction_name}(<#list instruction.arguments as argument
     >${{"AX": "implicit_argument",
-        "Op": "opcode_argument"}[argument?keep_before(":")]}, </#list
+        "Op": "opcode_argument",
+        "Reg": "reg_argument",
+        "Rm" : "rm_argument"}[argument?keep_before(":")]}, </#list
     >toPrimitive(deque.toArray(empty_byte_array))))</#macro
 >
+<#macro make_instruction instruction>
+<@make_instruction_with_name instruction.name instruction/>
+</#macro>
+<#macro make_instruction_addr16 instruction>
+    <@make_instruction_with_name instruction.name?replace("Addr32", "Addr16")?replace("Addr64", "Addr16") instruction/>
+</#macro>
+<#macro make_instruction_addr32 instruction>
+    <@make_instruction_with_name instruction.name?replace("Addr16", "Addr32")?replace("Addr64", "Addr32") instruction/>
+</#macro>
+<#macro make_instruction_eip_addr32 instruction>
+    <@make_instruction_with_name instruction.name?replace("Addr32", "EIPAddr32")?replace("Addr16", "EIPAddr32")?replace("Addr64", "EIPAddr32") instruction/>
+</#macro>
+<#macro make_instruction_addr64 instruction>
+    <@make_instruction_with_name instruction.name?replace("Addr16", "Addr64")?replace("Addr32", "Addr64") instruction/>
+</#macro>
+<#macro make_instruction_rip_addr64 instruction>
+    <@make_instruction_with_name instruction.name?replace("Addr64", "RIPAddr64")?replace("Addr16", "RIPAddr64")?replace("Addr32", "RIPAddr64") instruction/>
+</#macro>
 package ${session.currentProject.model.groupId}.x86.cpu;
 
 import org.jetbrains.annotations.Contract;
@@ -537,14 +575,14 @@ public interface Instruction {
         final private ${argument?keep_after(":")?keep_before("/")} arg${argument?index};
         </#list>
 
-        public ${classname(instruction_name, instruction_class.arguments)}(
-        <#list instruction_class.arguments as argument>
-            ${argument?keep_after(":")?keep_before("/")} arg${argument?index}<#sep>, </#sep>
-        </#list><#if instruction_class.arguments?size != 0>,</#if> byte[] bytes) {
+        public ${classname(instruction_name, instruction_class.arguments)}(<#list
+        instruction_class.arguments as argument>${
+            argument?keep_after(":")?keep_before("/")} arg${argument?index}<#sep>, </#sep></#list
+        ><#if instruction_class.arguments?size != 0>,</#if> byte[] bytes) {
         <#list instruction_class.arguments as argument>
             <#if argument?contains("/")>
-            this.arg${argument?index} = new ${argument?keep_after(":")?keep_before("/")}(
-                arg${argument?index}, (short)${argument?keep_after("/")});
+            this.arg${argument?index} = new ${argument?keep_after(":")?keep_before("/")}(arg${
+                argument?index}, (short)${argument?keep_after("/")});
             <#else>
             this.arg${argument?index} = arg${argument?index};
             </#if>
@@ -563,11 +601,8 @@ public interface Instruction {
         }
 
         public @NotNull Argument[] getArguments() {
-            return new Argument[]{
-        <#list instruction_class.arguments as argument>
-                arg${argument?index}.toArgument()<#sep>, </#sep>
-        </#list>
-                        };
+            return new Argument[]{<#list instruction_class.arguments as argument
+                >arg${argument?index}.toArgument()<#sep>, </#sep></#list>};
         }
 
         <#list instruction_class.arguments as argument>
@@ -632,7 +667,7 @@ public interface Instruction {
         Deque<Byte> deque = new ArrayDeque<Byte>();
         return it.tryProcess(deque, () -> {
             // If there are more than one segment prefix then only last one is used.
-            SegmentRegister segment = null;
+            Optional<SegmentRegister> segment = Optional.empty();
             // If there are two or more 0xf2/0xf3 prefixes then only last one is used.
             byte xf2_xf3_prefix = 0;
             // Prefixes 0x66, 0x67, or 0xf0 are either present or not.
@@ -646,22 +681,22 @@ public interface Instruction {
                 }
                 switch (it.peek()) {
                     case 0x26:
-                        segment = SegmentRegister.ES;
+                        segment = Optional.of(SegmentRegister.ES);
                         break;
                     case 0x2e:
-                        segment = SegmentRegister.CS;
+                        segment = Optional.of(SegmentRegister.CS);
                         break;
                     case 0x36:
-                        segment = SegmentRegister.SS;
+                        segment = Optional.of(SegmentRegister.SS);
                         break;
                     case 0x3e:
-                        segment = SegmentRegister.DS;
+                        segment = Optional.of(SegmentRegister.DS);
                         break;
                     case 0x64:
-                        segment = SegmentRegister.FS;
+                        segment = Optional.of(SegmentRegister.FS);
                         break;
                     case 0x65:
-                        segment = SegmentRegister.GS;
+                        segment = Optional.of(SegmentRegister.GS);
                         break;
                     case 0x66:
                         x66_prefix = true;
@@ -701,7 +736,7 @@ public interface Instruction {
             // Lambdas can only access final or effectively final variables.
             // Copy collected prefixes into final varaibles.
             final byte final_rex_prefix = rex_prefix;
-            final SegmentRegister final_segment = segment;
+            final Optional<SegmentRegister> final_segment = segment;
             final byte final_xf2_xf3_prefix = xf2_xf3_prefix;
             final boolean final_x66_prefix = x66_prefix;
             final boolean final_x67_prefix = x67_prefix;
@@ -769,6 +804,128 @@ public interface Instruction {
                             /* fallthrough */
                             </#if>
                         </#if>
+                    <#elseif opcode_map[opcode_prefix + opcode_value + " /r"]?? ||
+                             opcode_map[opcode_prefix + opcode_value + " /m"]??>
+                           {
+                               if (!it.hasNext()) {
+                                   return Optional.empty();
+                               }
+                        <#if opcode_map[opcode_prefix + opcode_value + " /r"]??>
+                            <#assign instruction = opcode_map[opcode_prefix + opcode_value + " /r"]>
+                        <#else>
+                            <#assign instruction = opcode_map[opcode_prefix + opcode_value + " /m"]>
+                        </#if>
+                                var reg_argument = <@reg_argument instruction "it.peek()" "final_rex_prefix"/>;
+                        <#if opcode_map[opcode_prefix + opcode_value + " /r"]??>
+                                if ((it.peek() & 0b11_000_000) == 0b11_000_000) {
+                                    var rm_argument = <@rm_argument instruction "it.peek()" "final_rex_prefix"/>;
+                                    return <@make_instruction instruction/>;
+                                }
+                        </#if>
+                        <#if opcode_map[opcode_prefix + opcode_value + " /m"]??>
+                            <#if opcode_map[opcode_prefix + opcode_value + " /r"]??>
+                                <#assign instruction = opcode_map[opcode_prefix + opcode_value + " /m"]>
+                                else {
+                            <#else>
+                                if ((it.peek() & 0b11_000_000) != 0b11_000_000) {
+                            </#if>
+                                    <#if NativeOperandSize == 16>
+                                    if (final_x67_prefix) {
+                                        var parse_result = parseGPAddress32(final_segment, final_rex_prefix, it);
+                                        if (parse_result.isEmpty()) {
+                                            return Optional.empty();
+                                        }
+                                        var rm_argument = parse_result.get();
+                                        return <@make_instruction_addr32 instruction/>;
+                                    } else {
+                                        var parse_result = parseGPAddress16(final_segment, it);
+                                        if (parse_result.isEmpty()) {
+                                            return Optional.empty();
+                                        }
+                                        var rm_argument = parse_result.get();
+                                        return <@make_instruction_addr16 instruction/>;
+                                    }
+                                    <#elseif NativeOperandSize == 32>
+                                    if (final_x67_prefix && (mode != Mode.ADDR64_DATA32)) {
+                                        var parse_result = parseGPAddress16(final_segment, it);
+                                        if (parse_result.isEmpty()) {
+                                            return Optional.empty();
+                                        }
+                                        var rm_argument = parse_result.get();
+                                        return <@make_instruction_addr16 instruction/>;
+                                    } else if (final_x67_prefix ^ (mode != Mode.ADDR64_DATA32)) {
+                                        if (mode == Mode.ADDR64_DATA32) {
+                                            if ((it.peek() & 0b11_000_111) == 0b00_000_101) {
+                                                it.next();
+                                                var parse_result = parseInteger(it);
+                                                if (parse_result.isEmpty()) {
+                                                    return Optional.empty();
+                                                }
+                                                var rm_argument = new EIPAddress32(final_segment, parse_result.get());
+                                                return <@make_instruction_eip_addr32 instruction/>;
+                                            }
+                                        }
+                                        var parse_result = parseGPAddress32(final_segment, final_rex_prefix, it);
+                                        if (parse_result.isEmpty()) {
+                                            return Optional.empty();
+                                        }
+                                        var rm_argument = parse_result.get();
+                                        return <@make_instruction_addr32 instruction/>;
+                                    } else {
+                                        if ((it.peek() & 0b11_000_111) == 0b00_000_101) {
+                                            it.next();
+                                            var parse_result = parseInteger(it);
+                                            if (parse_result.isEmpty()) {
+                                                return Optional.empty();
+                                            }
+                                            var rm_argument = new RIPAddress64(final_segment, parse_result.get());
+                                            return <@make_instruction_rip_addr64 instruction/>;
+                                        }
+                                        var parse_result = parseGPAddress64(final_segment, final_rex_prefix, it);
+                                        if (parse_result.isEmpty()) {
+                                            return Optional.empty();
+                                        }
+                                        var rm_argument = parse_result.get();
+                                        return <@make_instruction_addr64 instruction/>;
+                                    }
+                                    <#else><#-- NativeOperandSize == 64 -->
+                                    if (final_x67_prefix) {
+                                        if ((it.peek() & 0b11_000_111) == 0b00_000_101) {
+                                            it.next();
+                                            var parse_result = parseInteger(it);
+                                            if (parse_result.isEmpty()) {
+                                                return Optional.empty();
+                                            }
+                                            var rm_argument = new EIPAddress32(final_segment, parse_result.get());
+                                            return <@make_instruction_eip_addr32 instruction/>;
+                                        }
+                                        var parse_result = parseGPAddress32(final_segment, final_rex_prefix, it);
+                                        if (parse_result.isEmpty()) {
+                                            return Optional.empty();
+                                        }
+                                        var rm_argument = parse_result.get();
+                                        return <@make_instruction_addr32 instruction/>;
+                                    } else {
+                                        if ((it.peek() & 0b11_000_111) == 0b00_000_101) {
+                                            it.next();
+                                            var parse_result = parseInteger(it);
+                                            if (parse_result.isEmpty()) {
+                                                return Optional.empty();
+                                            }
+                                            var rm_argument = new RIPAddress64(final_segment, parse_result.get());
+                                            return <@make_instruction_rip_addr64 instruction/>;
+                                        }
+                                        var parse_result = parseGPAddress64(final_segment, final_rex_prefix, it);
+                                        if (parse_result.isEmpty()) {
+                                            return Optional.empty();
+                                        }
+                                        var rm_argument = parse_result.get();
+                                        return <@make_instruction_addr64 instruction/>;
+                                    }
+                                    </#if>
+                                }
+                        </#if>
+                            }
                     </#if>
                 </#if>
             </#list>
@@ -908,7 +1065,7 @@ public interface Instruction {
             return Optional.empty();
         } else {
             byte sib = it.next();
-            scale = ScaleFactor.of((sib & 0x11_000_000) >>> 6);
+            scale = ScaleFactor.of((sib & 0b11_000_000) >>> 6);
             if (((modrm & 0b11_000_000) == 0b00_000_000) &&
                     ((sib & 0b00_000_111) == 0b00_000_101)) {
                 Optional<Integer> disp32 = parseInteger(it);

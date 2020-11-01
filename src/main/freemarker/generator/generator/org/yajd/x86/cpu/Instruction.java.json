@@ -49,26 +49,9 @@
         }
       },
       {
-        "arguments" : ["Reg:GPRegister8", "Rm:GPRegister8/Memory8" ],
+        "arguments" : ["AX:GPRegisterNative", "Op:GPRegisterNative"],
         "names" : {
-          "add" : "0x02",
-          "mov" : "0x8a",
-          "sub" : "0x2a"
-        }
-      },
-      {
-        "arguments" : ["Rm:GPRegister8/Memory8", "Reg:GPRegister8" ],
-        "names" : {
-          "add" : "0x00",
-          "mov" : "0x88",
-          "sub" : "0x28"
-        }
-      },
-      {
-        "arguments" : ["Rm:GPRegister8" ],
-        "names" : {
-          "dec" : "0xfe /1",
-          "inc" : "0xfe /0"
+          "xchg" : "0x90"
         }
       },
       {
@@ -79,9 +62,11 @@
         }
       },
       {
-        "arguments" : ["AX:GPRegisterNative", "Op:GPRegisterNative"],
+        "arguments" : ["Reg:GPRegister8", "Rm:GPRegister8/Memory8" ],
         "names" : {
-          "xchg" : "0x90"
+          "add" : "0x02",
+          "mov" : "0x8a",
+          "sub" : "0x2a"
         }
       },
       {
@@ -93,11 +78,10 @@
         }
       },
       {
-        "arguments" : ["Rm:GPRegisterNative/MemoryNative", "Reg:GPRegisterNative" ],
+        "arguments" : ["Rm:GPRegister8" ],
         "names" : {
-          "add" : "0x01",
-          "mov" : "0x89",
-          "sub" : "0x29"
+          "dec" : "0xfe /1",
+          "inc" : "0xfe /0"
         }
       },
       {
@@ -105,6 +89,22 @@
         "names" : {
           "dec" : "0xff /1",
           "inc" : "0xff /0"
+        }
+      },
+      {
+        "arguments" : ["Rm:GPRegister8/Memory8", "Reg:GPRegister8" ],
+        "names" : {
+          "add" : "0x00",
+          "mov" : "0x88",
+          "sub" : "0x28"
+        }
+      },
+      {
+        "arguments" : ["Rm:GPRegisterNative/MemoryNative", "Reg:GPRegisterNative" ],
+        "names" : {
+          "add" : "0x01",
+          "mov" : "0x89",
+          "sub" : "0x29"
         }
       }
     ]

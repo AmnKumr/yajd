@@ -17,18 +17,27 @@ package org.yajd.x86.cpu;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Optional;
+
 public class EIPAddress32 {
+    private final Optional<SegmentRegister> segment;
     private final int disp;
     private final short size; // Memory operand size, 0 if not specified (e.g. lea).
 
-    EIPAddress32(int disp) {
+    EIPAddress32(Optional<SegmentRegister> segment, int disp) {
+        this.segment = segment;
         this.disp = disp;
         this.size = 0;
     }
 
     EIPAddress32(EIPAddress32 addr, short size) {
+        this.segment = addr.segment;
         this.disp = addr.disp;
         this.size = size;
+    }
+
+    public Optional<SegmentRegister> getSegment() {
+        return segment;
     }
 
     public int getDisp() {
