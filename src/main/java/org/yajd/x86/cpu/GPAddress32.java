@@ -29,6 +29,7 @@ public class GPAddress32 {
     private final int disp;
     private final short size; // Memory operand size, 0 if not specified (e.g. lea).
 
+    @Contract(pure = true)
     GPAddress32(Optional<SegmentRegister> segment, Optional<GPRegister32> base,
                 Optional<GPRegister32> index, ScaleFactor scale, int disp) {
         this.segment = segment;
@@ -39,7 +40,8 @@ public class GPAddress32 {
         this.size = 0;
     }
 
-    GPAddress32(GPAddress32 addr, short size) {
+    @Contract(pure = true)
+    GPAddress32(@NotNull GPAddress32 addr, short size) {
         this.segment = addr.segment;
         this.base = addr.base;
         this.index = addr.index;

@@ -24,13 +24,15 @@ public class RIPAddress64 {
     private final int disp;
     private final short size; // Memory operand size, 0 if not specified (e.g. lea).
 
+    @Contract(pure = true)
     RIPAddress64(Optional<SegmentRegister> segment, int disp) {
         this.segment = segment;
         this.disp = disp;
         this.size = 0;
     }
 
-    RIPAddress64(RIPAddress64 addr, short size) {
+    @Contract(pure = true)
+    RIPAddress64(@NotNull RIPAddress64 addr, short size) {
         this.segment = addr.segment;
         this.disp = addr.disp;
         this.size = size;

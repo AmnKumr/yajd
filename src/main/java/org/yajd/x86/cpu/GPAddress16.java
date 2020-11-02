@@ -26,6 +26,7 @@ public class GPAddress16 {
     private final short disp;
     private final short size; // Memory operand size, 0 if not specified (e.g. lea).
 
+    @Contract(pure = true)
     GPAddress16(Optional<SegmentRegister> segment, Optional<GPRegister16> base,
                 Optional<GPRegister16> index, short disp) {
         this.segment = segment;
@@ -35,7 +36,8 @@ public class GPAddress16 {
         this.size = 0;
     }
 
-    GPAddress16(GPAddress16 addr, short size) {
+    @Contract(pure = true)
+    GPAddress16(@NotNull GPAddress16 addr, short size) {
         this.segment = addr.segment;
         this.base = addr.base;
         this.index = addr.index;
