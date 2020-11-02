@@ -20,9 +20,9 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Optional;
 
 public class GPAddress64 {
-    private final Optional<SegmentRegister> segment;
-    private final Optional<GPRegister64> base;
-    private final Optional<GPRegister64> index;
+    private final SegmentRegister segment;
+    private final GPRegister64 base;
+    private final GPRegister64 index;
     // Note: scale may be always present even if there are no index.
     // It does not chage semantic, but it affects encoding.
     private final ScaleFactor scale;
@@ -30,8 +30,7 @@ public class GPAddress64 {
     private final short size; // Memory operand size, 0 if not specified (e.g. lea).
 
     @Contract(pure = true)
-    GPAddress64(Optional<SegmentRegister> segment, Optional<GPRegister64> base,
-                Optional<GPRegister64> index, ScaleFactor scale, int disp) {
+    GPAddress64(SegmentRegister segment, GPRegister64 base, GPRegister64 index, @NotNull ScaleFactor scale, int disp) {
         this.segment = segment;
         this.base = base;
         this.index = index;
@@ -51,18 +50,18 @@ public class GPAddress64 {
     }
 
     public Optional<SegmentRegister> getSegment() {
-        return segment;
+        return Optional.ofNullable(segment);
     }
 
     public Optional<GPRegister64> getBase() {
-        return base;
+        return Optional.ofNullable(base);
     }
 
     public Optional<GPRegister64> getIndex() {
-        return index;
+        return Optional.ofNullable(index);
     }
 
-    public ScaleFactor getScale() {
+    public @NotNull ScaleFactor getScale() {
         return scale;
     }
 

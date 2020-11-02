@@ -667,7 +667,7 @@ public interface Instruction {
         Deque<Byte> deque = new ArrayDeque<Byte>();
         return it.tryProcess(deque, () -> {
             // If there are more than one segment prefix then only last one is used.
-            Optional<SegmentRegister> segment = Optional.empty();
+            SegmentRegister segment = null;
             // If there are two or more 0xf2/0xf3 prefixes then only last one is used.
             byte xf2_xf3_prefix = 0;
             // Prefixes 0x66, 0x67, or 0xf0 are either present or not.
@@ -681,22 +681,22 @@ public interface Instruction {
                 }
                 switch (it.peek()) {
                     case 0x26:
-                        segment = Optional.of(SegmentRegister.ES);
+                        segment = SegmentRegister.ES;
                         break;
                     case 0x2e:
-                        segment = Optional.of(SegmentRegister.CS);
+                        segment = SegmentRegister.CS;
                         break;
                     case 0x36:
-                        segment = Optional.of(SegmentRegister.SS);
+                        segment = SegmentRegister.SS;
                         break;
                     case 0x3e:
-                        segment = Optional.of(SegmentRegister.DS);
+                        segment = SegmentRegister.DS;
                         break;
                     case 0x64:
-                        segment = Optional.of(SegmentRegister.FS);
+                        segment = SegmentRegister.FS;
                         break;
                     case 0x65:
-                        segment = Optional.of(SegmentRegister.GS);
+                        segment = SegmentRegister.GS;
                         break;
                     case 0x66:
                         x66_prefix = true;
@@ -736,7 +736,7 @@ public interface Instruction {
             // Lambdas can only access final or effectively final variables.
             // Copy collected prefixes into final varaibles.
             final byte final_rex_prefix = rex_prefix;
-            final Optional<SegmentRegister> final_segment = segment;
+            final SegmentRegister final_segment = segment;
             final byte final_xf2_xf3_prefix = xf2_xf3_prefix;
             final boolean final_x66_prefix = x66_prefix;
             final boolean final_x67_prefix = x67_prefix;
@@ -969,8 +969,7 @@ public interface Instruction {
     Byte[] empty_byte_array = new Byte[0];
 
     /* Note: GPAddress16 is not supported in ADDR64_DATA32 mode thus REX support is not needed */
-    static Optional<GPAddress16> parseGPAddress16(@NotNull Optional<SegmentRegister> segment,
-                                                  @NotNull Iterator<Byte> it) {
+    static Optional<GPAddress16> parseGPAddress16(SegmentRegister segment, @NotNull Iterator<Byte> it) {
         if (!it.hasNext()) {
             return Optional.empty();
         }
@@ -979,8 +978,7 @@ public interface Instruction {
         if ((modrm & 0b11_000_111) == 0b00_000_110) {
             Optional<Short> disp16 = parseShort(it);
             if (disp16.isPresent()) {
-                return Optional.of(new GPAddress16(
-                        segment, Optional.empty(), Optional.empty(), disp16.get()));
+                return Optional.of(new GPAddress16(segment, null, null, disp16.get()));
             }
             return Optional.empty();
         }
@@ -998,64 +996,58 @@ public interface Instruction {
             disp = disp16.get();
         }
         return Optional.of(new GPAddress16(
-                segment,
-                base_by_rm[modrm & 0b00_000_111],
-                index_by_rm[modrm & 0b00_000_111],
-                disp));
+                segment, base_by_rm[modrm & 0b00_000_111], index_by_rm[modrm & 0b00_000_111], disp));
     }
 
-    Optional<GPRegister16>[] base_by_rm = new Optional[]{
-            Optional.of(GPRegister16.BX),
-            Optional.of(GPRegister16.BX),
-            Optional.of(GPRegister16.BP),
-            Optional.of(GPRegister16.BP),
-            Optional.empty(),
-            Optional.empty(),
-            Optional.of(GPRegister16.BP),
-            Optional.of(GPRegister16.BX)
+    GPRegister16[] base_by_rm = new GPRegister16[]{
+            GPRegister16.BX,
+            GPRegister16.BX,
+            GPRegister16.BP,
+            GPRegister16.BP,
+            null,
+            null,
+            GPRegister16.BP,
+            GPRegister16.BX
     };
 
-    Optional<GPRegister16>[] index_by_rm = new Optional[]{
-            Optional.of(GPRegister16.SI),
-            Optional.of(GPRegister16.DI),
-            Optional.of(GPRegister16.SI),
-            Optional.of(GPRegister16.DI),
-            Optional.of(GPRegister16.SI),
-            Optional.of(GPRegister16.DI),
-            Optional.empty(),
-            Optional.empty()
+    GPRegister16[] index_by_rm = new GPRegister16[]{
+            GPRegister16.SI,
+            GPRegister16.DI,
+            GPRegister16.SI,
+            GPRegister16.DI,
+            GPRegister16.SI,
+            GPRegister16.DI,
+            null,
+            null
     };
 
 <#list [32, 64] as AddrSize>
     static Optional<GPAddress${AddrSize}> parseGPAddress${AddrSize}(
-            @NotNull Optional<SegmentRegister> segment,
-            byte rex,
-            @NotNull Iterator<Byte> it) {
+            SegmentRegister segment, byte rex, @NotNull Iterator<Byte> it) {
         if (!it.hasNext()) {
             return Optional.empty();
         }
         byte modrm = it.next();
         assert (modrm & 0b11_000_000) != 0b11_000_000;
-        Optional<GPRegister${AddrSize}> base = Optional.empty();
-        Optional<GPRegister${AddrSize}> index = Optional.empty();
+        GPRegister${AddrSize} base = null;
+        GPRegister${AddrSize} index = null;
         ScaleFactor scale = ScaleFactor.X1;
         int disp = 0;
         if ((modrm & 0b11_000_111) == 0b00_000_101) {
-            Optional<Integer> disp32 = parseInteger(it);
+            var disp32 = parseInteger(it);
             if (disp32.isEmpty()) {
                 return Optional.empty();
             }
             disp = disp32.get();
         } else if ((modrm & 0b00_000_111) != 0b00_000_100) {
-            base = Optional.of(GPRegister${AddrSize}.of(
-                    (modrm & 0b00_000_111) | ((rex & 0b00_000_001) << 3)));
+            base = GPRegister${AddrSize}.of((modrm & 0b00_000_111) | ((rex & 0b00_000_001) << 3));
             if ((modrm & 0b11_000_000) == 0b01_000_000) {
                 if (!it.hasNext()) {
                     return Optional.empty();
                 }
                 disp = it.next();
             } else if ((modrm & 0b11_000_000) == 0b10_000_000) {
-                Optional<Integer> disp32 = parseInteger(it);
+                var disp32 = parseInteger(it);
                 if (disp32.isEmpty()) {
                     return Optional.empty();
                 }
@@ -1068,33 +1060,29 @@ public interface Instruction {
             scale = ScaleFactor.of((sib & 0b11_000_000) >>> 6);
             if (((modrm & 0b11_000_000) == 0b00_000_000) &&
                     ((sib & 0b00_000_111) == 0b00_000_101)) {
-                Optional<Integer> disp32 = parseInteger(it);
+                var disp32 = parseInteger(it);
                 if (disp32.isEmpty()) {
                     return Optional.empty();
                 }
                 disp = disp32.get();
             } else {
-                base = Optional.of(GPRegister${AddrSize}.of(
-                        (sib & 0b00_000_111) | ((rex & 0b0000_0_0_0_1) << 3)));
+                base = GPRegister${AddrSize}.of((sib & 0b00_000_111) | ((rex & 0b0000_0_0_0_1) << 3));
                 if ((modrm & 0b11_000_000) == 0b01_000_000) {
                     if (!it.hasNext()) {
                         return Optional.empty();
                     }
                     disp = it.next();
                 } else if ((modrm & 0b11_000_000) == 0b10_000_000) {
-                    Optional<Integer> disp32 = parseInteger(it);
+                    var disp32 = parseInteger(it);
                     if (disp32.isEmpty()) {
                         return Optional.empty();
                     }
                     disp = disp32.get();
                 }
             }
-            var idx = GPRegister${AddrSize}.of(
-                    ((sib & 0b00_111_000) >>> 3) | ((rex & 0b0000_0_0_1_0) << 2));
-            if (idx == GPRegister${AddrSize}.<#if AddrSize == 32>ESP<#else>RSP</#if>) {
-                index = Optional.empty();
-            } else {
-                index = Optional.of(idx);
+            index = GPRegister${AddrSize}.of(((sib & 0b00_111_000) >>> 3) | ((rex & 0b0000_0_0_1_0) << 2));
+            if (index == GPRegister${AddrSize}.<#if AddrSize == 32>ESP<#else>RSP</#if>) {
+                index = null;
             }
         }
         return Optional.of(new GPAddress${AddrSize}(segment, base, index, scale, disp));

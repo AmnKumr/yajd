@@ -20,12 +20,12 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Optional;
 
 public class EIPAddress32 {
-    private final Optional<SegmentRegister> segment;
+    private final SegmentRegister segment;
     private final int disp;
     private final short size; // Memory operand size, 0 if not specified (e.g. lea).
 
     @Contract(pure = true)
-    EIPAddress32(Optional<SegmentRegister> segment, int disp) {
+    EIPAddress32(SegmentRegister segment, int disp) {
         this.segment = segment;
         this.disp = disp;
         this.size = 0;
@@ -39,7 +39,7 @@ public class EIPAddress32 {
     }
 
     public Optional<SegmentRegister> getSegment() {
-        return segment;
+        return Optional.ofNullable(segment);
     }
 
     public int getDisp() {

@@ -20,15 +20,15 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Optional;
 
 public class GPAddress16 {
-    private final Optional<SegmentRegister> segment;
-    private final Optional<GPRegister16> base;
-    private final Optional<GPRegister16> index;
+    private final SegmentRegister segment;
+    private final GPRegister16 base;
+    private final GPRegister16 index;
     private final short disp;
     private final short size; // Memory operand size, 0 if not specified (e.g. lea).
 
     @Contract(pure = true)
-    GPAddress16(Optional<SegmentRegister> segment, Optional<GPRegister16> base,
-                Optional<GPRegister16> index, short disp) {
+    GPAddress16(SegmentRegister segment, GPRegister16 base,
+                GPRegister16 index, short disp) {
         this.segment = segment;
         this.base = base;
         this.index = index;
@@ -46,15 +46,15 @@ public class GPAddress16 {
     }
 
     public Optional<SegmentRegister> getSegment() {
-        return segment;
+        return Optional.ofNullable(segment);
     }
 
     public Optional<GPRegister16> getBase() {
-        return base;
+        return Optional.ofNullable(base);
     }
 
     public Optional<GPRegister16> getIndex() {
-        return index;
+        return Optional.ofNullable(index);
     }
 
     public short getDisp() {

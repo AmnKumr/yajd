@@ -20,12 +20,12 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Optional;
 
 public class RIPAddress64 {
-    private final Optional<SegmentRegister> segment;
+    private final SegmentRegister segment;
     private final int disp;
     private final short size; // Memory operand size, 0 if not specified (e.g. lea).
 
     @Contract(pure = true)
-    RIPAddress64(Optional<SegmentRegister> segment, int disp) {
+    RIPAddress64(SegmentRegister segment, int disp) {
         this.segment = segment;
         this.disp = disp;
         this.size = 0;
@@ -39,7 +39,7 @@ public class RIPAddress64 {
     }
 
     public Optional<SegmentRegister> getSegment() {
-        return segment;
+        return Optional.ofNullable(segment);
     }
 
     public int getDisp() {
