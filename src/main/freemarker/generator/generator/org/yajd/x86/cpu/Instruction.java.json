@@ -78,14 +78,14 @@
         }
       },
       {
-        "arguments" : ["Rm:GPRegister8" ],
+        "arguments" : ["Rm:GPRegister8/Memory8" ],
         "names" : {
           "dec" : "0xfe /1",
           "inc" : "0xfe /0"
         }
       },
       {
-        "arguments" : ["Rm:GPRegisterNative" ],
+        "arguments" : ["Rm:GPRegisterNative/MemoryNative" ],
         "names" : {
           "dec" : "0xff /1",
           "inc" : "0xff /0"

@@ -174,7 +174,7 @@
                         "names": instructions[0].names + split_opcodes(
                             instructions[0].names?keys,
                             instructions[0].names,
-                            "SKIP", "SKIP", "0x48 ")}]) +
+                            "SKIP", "SKIP", "rexw ")}]) +
                 expand_native_arguments(instructions[1..])>
         <#else>
             <#return expand_address_arguments([instructions[0]]) +
@@ -197,13 +197,13 @@
     <#else>
         <#if names[keys[0]]?contains("/")>
             <#local opcode =
-                names[keys[0]]?keep_before_last("/") + " " +
+                names[keys[0]]?keep_before_last("/") +
                 reg_mem_marker +
                 " /" +
                 names[keys[0]]?keep_after_last("/")>
         <#elseif names[keys[0]]?contains("+")>
             <#local opcode =
-            names[keys[0]]?keep_before_last("+") + " " +
+            names[keys[0]]?keep_before_last("+") +
             reg_mem_marker +
             " +" +
             names[keys[0]]?keep_after_last("+")>
@@ -500,6 +500,102 @@ Optional.of(new ${instruction_name}(<#list instruction.arguments as argument
 <#macro make_instruction_rip_addr64 instruction>
     <@make_instruction_with_name instruction.name?replace("Addr64", "RIPAddr64")?replace("Addr16", "RIPAddr64")?replace("Addr32", "RIPAddr64") instruction/>
 </#macro>
+<#macro parse_operand_and_return_instruction indent native_operand_size instruction>
+    <#if native_operand_size == 16>
+        ${indent}if (final_x67_prefix) {
+        ${indent}    var parse_result = parseGPAddress32(final_segment, final_rex_prefix, it);
+        ${indent}    if (parse_result.isEmpty()) {
+        ${indent}        return Optional.empty();
+        ${indent}    }
+        ${indent}    var rm_argument = parse_result.get();
+        ${indent}    return <@make_instruction_addr32 instruction/>;
+        ${indent}} else {
+        ${indent}    var parse_result = parseGPAddress16(final_segment, it);
+        ${indent}    if (parse_result.isEmpty()) {
+        ${indent}        return Optional.empty();
+        ${indent}    }
+        ${indent}    var rm_argument = parse_result.get();
+        ${indent}    return <@make_instruction_addr16 instruction/>;
+        ${indent}}
+    <#elseif native_operand_size == 32>
+        ${indent}if (final_x67_prefix && (mode != Mode.ADDR64_DATA32)) {
+        ${indent}    var parse_result = parseGPAddress16(final_segment, it);
+        ${indent}    if (parse_result.isEmpty()) {
+        ${indent}        return Optional.empty();
+        ${indent}    }
+        ${indent}    var rm_argument = parse_result.get();
+        ${indent}    return <@make_instruction_addr16 instruction/>;
+        ${indent}} else if (final_x67_prefix ^ (mode != Mode.ADDR64_DATA32)) {
+        ${indent}    if (mode == Mode.ADDR64_DATA32) {
+        ${indent}        if ((it.peek() & 0b11_000_111) == 0b00_000_101) {
+        ${indent}            it.next();
+        ${indent}            var parse_result = parseInteger(it);
+        ${indent}            if (parse_result.isEmpty()) {
+        ${indent}                return Optional.empty();
+        ${indent}            }
+        ${indent}            var rm_argument = new EIPAddress32(final_segment, parse_result.get());
+        ${indent}            return <@make_instruction_eip_addr32 instruction/>;
+        ${indent}        }
+        ${indent}    }
+        ${indent}    var parse_result = parseGPAddress32(final_segment, final_rex_prefix, it);
+        ${indent}    if (parse_result.isEmpty()) {
+        ${indent}        return Optional.empty();
+        ${indent}    }
+        ${indent}    var rm_argument = parse_result.get();
+        ${indent}    return <@make_instruction_addr32 instruction/>;
+        ${indent}} else {
+        ${indent}    if ((it.peek() & 0b11_000_111) == 0b00_000_101) {
+        ${indent}        it.next();
+        ${indent}        var parse_result = parseInteger(it);
+        ${indent}        if (parse_result.isEmpty()) {
+        ${indent}            return Optional.empty();
+        ${indent}        }
+        ${indent}        var rm_argument = new RIPAddress64(final_segment, parse_result.get());
+        ${indent}        return <@make_instruction_rip_addr64 instruction/>;
+        ${indent}    }
+        ${indent}    var parse_result = parseGPAddress64(final_segment, final_rex_prefix, it);
+        ${indent}    if (parse_result.isEmpty()) {
+        ${indent}        return Optional.empty();
+        ${indent}    }
+        ${indent}    var rm_argument = parse_result.get();
+        ${indent}    return <@make_instruction_addr64 instruction/>;
+        ${indent}}
+     <#else><#-- native_operand_size == 64 -->
+        ${indent}if (final_x67_prefix) {
+        ${indent}    if ((it.peek() & 0b11_000_111) == 0b00_000_101) {
+        ${indent}        it.next();
+        ${indent}        var parse_result = parseInteger(it);
+        ${indent}        if (parse_result.isEmpty()) {
+        ${indent}            return Optional.empty();
+        ${indent}        }
+        ${indent}        var rm_argument = new EIPAddress32(final_segment, parse_result.get());
+        ${indent}        return <@make_instruction_eip_addr32 instruction/>;
+        ${indent}    }
+        ${indent}    var parse_result = parseGPAddress32(final_segment, final_rex_prefix, it);
+        ${indent}    if (parse_result.isEmpty()) {
+        ${indent}        return Optional.empty();
+        ${indent}    }
+        ${indent}    var rm_argument = parse_result.get();
+        ${indent}    return <@make_instruction_addr32 instruction/>;
+        ${indent}} else {
+        ${indent}    if ((it.peek() & 0b11_000_111) == 0b00_000_101) {
+        ${indent}        it.next();
+        ${indent}        var parse_result = parseInteger(it);
+        ${indent}        if (parse_result.isEmpty()) {
+        ${indent}            return Optional.empty();
+        ${indent}        }
+        ${indent}        var rm_argument = new RIPAddress64(final_segment, parse_result.get());
+        ${indent}        return <@make_instruction_rip_addr64 instruction/>;
+        ${indent}    }
+        ${indent}    var parse_result = parseGPAddress64(final_segment, final_rex_prefix, it);
+        ${indent}    if (parse_result.isEmpty()) {
+        ${indent}        return Optional.empty();
+        ${indent}    }
+        ${indent}    var rm_argument = parse_result.get();
+        ${indent}    return <@make_instruction_addr64 instruction/>;
+        ${indent}}
+    </#if>
+</#macro>
 package ${session.currentProject.model.groupId}.x86.cpu;
 
 import org.jetbrains.annotations.Contract;
@@ -750,24 +846,24 @@ public interface Instruction {
         <#list ["", "0xf2", "0xf3"] as Xf2Xf3Prefix>
             <#if X66Prefix == "">
                 <#if Xf2Xf3Prefix == "">
-                    <#assign opcode_prefix>0x</#assign>
+                    <#assign opcode_prefix></#assign>
                 <#else>
-                    <#assign opcode_prefix>${Xf2Xf3Prefix} 0x</#assign>
+                    <#assign opcode_prefix>${Xf2Xf3Prefix} </#assign>
                 </#if>
             <#else>
                 <#if Xf2Xf3Prefix == "">
-                    <#assign opcode_prefix>${X66Prefix} 0x</#assign>
+                    <#assign opcode_prefix>${X66Prefix} </#assign>
                 <#else>
-                    <#assign opcode_prefix>${X66Prefix} ${Xf2Xf3Prefix} 0x</#assign>
+                    <#assign opcode_prefix>${X66Prefix} ${Xf2Xf3Prefix} </#assign>
                 </#if>
             </#if>
             <#if NativeOperandSize == 64>
-                <#assign opcode_prefix>${opcode_prefix}48 0x</#assign>
+                <#assign opcode_prefix>${opcode_prefix}rexw </#assign>
             </#if>
+            <#assign opcode_prefix>${opcode_prefix}0x</#assign>
                 Supplier<Optional<Instruction>> parse_${X66Prefix}_${Xf2Xf3Prefix}_instruction = () -> {
                     switch (opcode) {
-            <#list byte_vaues?filter(x -> !element_in_list(x, ["0x48", "0x66", "0xf2", "0xf3"]))
-                   as opcode_value>
+            <#list byte_vaues?filter(x -> !element_in_list(x, ["66", "f2", "f3"])) as opcode_value>
                 <#if opcode_map[opcode_prefix + opcode_value]?? ||
                      prefix_opcode_map[opcode_prefix + opcode_value]??>
                         case ${value_to_byte(opcode_value)}:
@@ -806,10 +902,10 @@ public interface Instruction {
                         </#if>
                     <#elseif opcode_map[opcode_prefix + opcode_value + " /r"]?? ||
                              opcode_map[opcode_prefix + opcode_value + " /m"]??>
-                           {
-                               if (!it.hasNext()) {
-                                   return Optional.empty();
-                               }
+                            {
+                                if (!it.hasNext()) {
+                                    return Optional.empty();
+                                }
                         <#if opcode_map[opcode_prefix + opcode_value + " /r"]??>
                             <#assign instruction = opcode_map[opcode_prefix + opcode_value + " /r"]>
                         <#else>
@@ -818,7 +914,7 @@ public interface Instruction {
                                 var reg_argument = <@reg_argument instruction "it.peek()" "final_rex_prefix"/>;
                         <#if opcode_map[opcode_prefix + opcode_value + " /r"]??>
                                 if ((it.peek() & 0b11_000_000) == 0b11_000_000) {
-                                    var rm_argument = <@rm_argument instruction "it.peek()" "final_rex_prefix"/>;
+                                    var rm_argument = <@rm_argument instruction "it.next()" "final_rex_prefix"/>;
                                     return <@make_instruction instruction/>;
                                 }
                         </#if>
@@ -829,100 +925,58 @@ public interface Instruction {
                             <#else>
                                 if ((it.peek() & 0b11_000_000) != 0b11_000_000) {
                             </#if>
-                                    <#if NativeOperandSize == 16>
-                                    if (final_x67_prefix) {
-                                        var parse_result = parseGPAddress32(final_segment, final_rex_prefix, it);
-                                        if (parse_result.isEmpty()) {
+                                    <@parse_operand_and_return_instruction ""?left_pad(28) NativeOperandSize instruction/>
+                                }
+                        </#if>
+                            }
+                    <#elseif prefix_opcode_map[opcode_prefix + opcode_value + " /r"]?? ||
+                             prefix_opcode_map[opcode_prefix + opcode_value + " /m"]??>
+                            {
+                                if (!it.hasNext()) {
+                                    return Optional.empty();
+                                }
+                                byte opcode_extension = (byte)(it.peek() & 0b00_111_000);
+                        <#if prefix_opcode_map[opcode_prefix + opcode_value + " /r"]??>
+                                if ((it.peek() & 0b11_000_000) == 0b11_000_000) {
+                                    switch (opcode_extension) {
+                            <#list ["0:000", "1:001", "2:010", "3:011", "4:100", "5:101", "6:110", "7:111"]
+                            as opcode_extension>
+                                <#assign full_opcode = opcode_prefix + opcode_value + " /r /" + opcode_extension?keep_before(":")>
+                                <#if  opcode_map[full_opcode]??>
+                                    <#assign instruction = opcode_map[full_opcode]>
+                                        case 0b00_${opcode_extension?keep_after(":")}_000 :
+                                            {
+                                                var rm_argument = <@rm_argument instruction "it.next()" "final_rex_prefix"/>;
+                                                return <@make_instruction instruction/>;
+                                            }
+                                </#if>
+                            </#list>
+                                        default:
                                             return Optional.empty();
-                                        }
-                                        var rm_argument = parse_result.get();
-                                        return <@make_instruction_addr32 instruction/>;
-                                    } else {
-                                        var parse_result = parseGPAddress16(final_segment, it);
-                                        if (parse_result.isEmpty()) {
-                                            return Optional.empty();
-                                        }
-                                        var rm_argument = parse_result.get();
-                                        return <@make_instruction_addr16 instruction/>;
                                     }
-                                    <#elseif NativeOperandSize == 32>
-                                    if (final_x67_prefix && (mode != Mode.ADDR64_DATA32)) {
-                                        var parse_result = parseGPAddress16(final_segment, it);
-                                        if (parse_result.isEmpty()) {
-                                            return Optional.empty();
-                                        }
-                                        var rm_argument = parse_result.get();
-                                        return <@make_instruction_addr16 instruction/>;
-                                    } else if (final_x67_prefix ^ (mode != Mode.ADDR64_DATA32)) {
-                                        if (mode == Mode.ADDR64_DATA32) {
-                                            if ((it.peek() & 0b11_000_111) == 0b00_000_101) {
-                                                it.next();
-                                                var parse_result = parseInteger(it);
-                                                if (parse_result.isEmpty()) {
-                                                    return Optional.empty();
-                                                }
-                                                var rm_argument = new EIPAddress32(final_segment, parse_result.get());
-                                                return <@make_instruction_eip_addr32 instruction/>;
+                                }
+                        </#if>
+                        <#if prefix_opcode_map[opcode_prefix + opcode_value + " /m"]??>
+                            <#if prefix_opcode_map[opcode_prefix + opcode_value + " /r"]??>
+                                else {
+                            <#else>
+                                if ((it.peek() & 0b11_000_000) != 0b11_000_000) {
+                            </#if>
+                                    switch (opcode_extension) {
+                            <#list ["0:000", "1:001", "2:010", "3:011", "4:100", "5:101", "6:110", "7:111"]
+                                   as opcode_extension>
+                                <#assign full_opcode = opcode_prefix + opcode_value + " /m /" + opcode_extension?keep_before(":")>
+                                    <#if  opcode_map[full_opcode]??>
+                                        <#assign instruction = opcode_map[full_opcode]>
+                                        case 0b00_${opcode_extension?keep_after(":")}_000:
+                                            {
+                                                <@parse_operand_and_return_instruction ""?left_pad(40) NativeOperandSize instruction/>
                                             }
-                                        }
-                                        var parse_result = parseGPAddress32(final_segment, final_rex_prefix, it);
-                                        if (parse_result.isEmpty()) {
+                                        </#if>
+                            </#list>
+                                        default:
                                             return Optional.empty();
-                                        }
-                                        var rm_argument = parse_result.get();
-                                        return <@make_instruction_addr32 instruction/>;
-                                    } else {
-                                        if ((it.peek() & 0b11_000_111) == 0b00_000_101) {
-                                            it.next();
-                                            var parse_result = parseInteger(it);
-                                            if (parse_result.isEmpty()) {
-                                                return Optional.empty();
-                                            }
-                                            var rm_argument = new RIPAddress64(final_segment, parse_result.get());
-                                            return <@make_instruction_rip_addr64 instruction/>;
-                                        }
-                                        var parse_result = parseGPAddress64(final_segment, final_rex_prefix, it);
-                                        if (parse_result.isEmpty()) {
-                                            return Optional.empty();
-                                        }
-                                        var rm_argument = parse_result.get();
-                                        return <@make_instruction_addr64 instruction/>;
                                     }
-                                    <#else><#-- NativeOperandSize == 64 -->
-                                    if (final_x67_prefix) {
-                                        if ((it.peek() & 0b11_000_111) == 0b00_000_101) {
-                                            it.next();
-                                            var parse_result = parseInteger(it);
-                                            if (parse_result.isEmpty()) {
-                                                return Optional.empty();
-                                            }
-                                            var rm_argument = new EIPAddress32(final_segment, parse_result.get());
-                                            return <@make_instruction_eip_addr32 instruction/>;
-                                        }
-                                        var parse_result = parseGPAddress32(final_segment, final_rex_prefix, it);
-                                        if (parse_result.isEmpty()) {
-                                            return Optional.empty();
-                                        }
-                                        var rm_argument = parse_result.get();
-                                        return <@make_instruction_addr32 instruction/>;
-                                    } else {
-                                        if ((it.peek() & 0b11_000_111) == 0b00_000_101) {
-                                            it.next();
-                                            var parse_result = parseInteger(it);
-                                            if (parse_result.isEmpty()) {
-                                                return Optional.empty();
-                                            }
-                                            var rm_argument = new RIPAddress64(final_segment, parse_result.get());
-                                            return <@make_instruction_rip_addr64 instruction/>;
-                                        }
-                                        var parse_result = parseGPAddress64(final_segment, final_rex_prefix, it);
-                                        if (parse_result.isEmpty()) {
-                                            return Optional.empty();
-                                        }
-                                        var rm_argument = parse_result.get();
-                                        return <@make_instruction_addr64 instruction/>;
-                                    }
-                                    </#if>
                                 }
                         </#if>
                             }

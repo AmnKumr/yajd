@@ -29,38 +29,256 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 public class InstructionTest {
-    static @NotNull Stream<Arguments> decIncEncodings() {
+    static @NotNull Stream<Arguments> decIncRegisterEncodings() {
         return Stream.of(
                 arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x48}, "DecReg16", GPRegister16.AX),
-                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x49}, "DecReg16", GPRegister16.CX),
-                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x4a}, "DecReg16", GPRegister16.DX),
-                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x4b}, "DecReg16", GPRegister16.BX),
-                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x4c}, "DecReg16", GPRegister16.SP),
-                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x4d}, "DecReg16", GPRegister16.BP),
-                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x4e}, "DecReg16", GPRegister16.SI),
-                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x4f}, "DecReg16", GPRegister16.DI),
-                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x66, 0x48}, "DecReg32", GPRegister32.EAX),
-                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x48}, "DecReg32", GPRegister32.EAX),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{(byte)0xff, (byte)0xc8}, "DecReg16", GPRegister16.AX),
                 arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x66, 0x48}, "DecReg16", GPRegister16.AX),
-                arguments(Instruction.Mode.ADDR32_DATA16, new Byte[]{0x48}, "DecReg16", GPRegister16.AX),
-                arguments(Instruction.Mode.ADDR32_DATA16, new Byte[]{0x66, 0x48}, "DecReg32", GPRegister32.EAX),
-                arguments(Instruction.Mode.ADDR32_DATA32, new Byte[]{0x48}, "DecReg32", GPRegister32.EAX),
-                arguments(Instruction.Mode.ADDR32_DATA32, new Byte[]{0x66, 0x48}, "DecReg16", GPRegister16.AX),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x66, (byte)0xff, (byte)0xc8}, "DecReg16", GPRegister16.AX),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x66, (byte)0xff, (byte)0xc8}, "DecReg16", GPRegister16.AX),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x49}, "DecReg16", GPRegister16.CX),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{(byte)0xff, (byte)0xc9}, "DecReg16", GPRegister16.CX),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x66, 0x49}, "DecReg16", GPRegister16.CX),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x66, (byte)0xff, (byte)0xc9}, "DecReg16", GPRegister16.CX),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x66, (byte)0xff, (byte)0xc9}, "DecReg16", GPRegister16.CX),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x4a}, "DecReg16", GPRegister16.DX),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{(byte)0xff, (byte)0xca}, "DecReg16", GPRegister16.DX),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x66, 0x4a}, "DecReg16", GPRegister16.DX),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x66, (byte)0xff, (byte)0xca}, "DecReg16", GPRegister16.DX),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x66, (byte)0xff, (byte)0xca}, "DecReg16", GPRegister16.DX),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x4b}, "DecReg16", GPRegister16.BX),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{(byte)0xff, (byte)0xcb}, "DecReg16", GPRegister16.BX),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x66, 0x4b}, "DecReg16", GPRegister16.BX),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x66, (byte)0xff, (byte)0xcb}, "DecReg16", GPRegister16.BX),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x66, (byte)0xff, (byte)0xcb}, "DecReg16", GPRegister16.BX),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x4c}, "DecReg16", GPRegister16.SP),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{(byte)0xff, (byte)0xcc}, "DecReg16", GPRegister16.SP),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x66, 0x4c}, "DecReg16", GPRegister16.SP),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x66, (byte)0xff, (byte)0xcc}, "DecReg16", GPRegister16.SP),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x66, (byte)0xff, (byte)0xcc}, "DecReg16", GPRegister16.SP),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x4d}, "DecReg16", GPRegister16.BP),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{(byte)0xff, (byte)0xcd}, "DecReg16", GPRegister16.BP),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x66, 0x4d}, "DecReg16", GPRegister16.BP),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x66, (byte)0xff, (byte)0xcd}, "DecReg16", GPRegister16.BP),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x66, (byte)0xff, (byte)0xcd}, "DecReg16", GPRegister16.BP),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x4e}, "DecReg16", GPRegister16.SI),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{(byte)0xff, (byte)0xce}, "DecReg16", GPRegister16.SI),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x66, 0x4e}, "DecReg16", GPRegister16.SI),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x66, (byte)0xff, (byte)0xce}, "DecReg16", GPRegister16.SI),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x66, (byte)0xff, (byte)0xce}, "DecReg16", GPRegister16.SI),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x4f}, "DecReg16", GPRegister16.DI),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{(byte)0xff, (byte)0xcf}, "DecReg16", GPRegister16.DI),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x66, 0x4f}, "DecReg16", GPRegister16.DI),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x66, (byte)0xff, (byte)0xcf}, "DecReg16", GPRegister16.DI),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x66, (byte)0xff, (byte)0xcf}, "DecReg16", GPRegister16.DI),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x66, 0x41, (byte)0xff, (byte)0xc8}, "DecReg16", GPRegister16.R8W),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x66, 0x41, (byte)0xff, (byte)0xc9}, "DecReg16", GPRegister16.R9W),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x66, 0x41, (byte)0xff, (byte)0xca}, "DecReg16", GPRegister16.R10W),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x66, 0x41, (byte)0xff, (byte)0xcb}, "DecReg16", GPRegister16.R11W),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x66, 0x41, (byte)0xff, (byte)0xcc}, "DecReg16", GPRegister16.R12W),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x66, 0x41, (byte)0xff, (byte)0xcd}, "DecReg16", GPRegister16.R13W),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x66, 0x41, (byte)0xff, (byte)0xce}, "DecReg16", GPRegister16.R14W),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x66, 0x41, (byte)0xff, (byte)0xcf}, "DecReg16", GPRegister16.R15W),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x66, 0x48}, "DecReg32", GPRegister32.EAX),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x66, (byte)0xff, (byte)0xc8}, "DecReg32", GPRegister32.EAX),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x48}, "DecReg32", GPRegister32.EAX),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{(byte)0xff, (byte)0xc8}, "DecReg32", GPRegister32.EAX),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{(byte)0xff, (byte)0xc8}, "DecReg32", GPRegister32.EAX),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x66, 0x49}, "DecReg32", GPRegister32.ECX),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x66, (byte)0xff, (byte)0xc9}, "DecReg32", GPRegister32.ECX),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x49}, "DecReg32", GPRegister32.ECX),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{(byte)0xff, (byte)0xc9}, "DecReg32", GPRegister32.ECX),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{(byte)0xff, (byte)0xc9}, "DecReg32", GPRegister32.ECX),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x66, 0x4a}, "DecReg32", GPRegister32.EDX),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x66, (byte)0xff, (byte)0xca}, "DecReg32", GPRegister32.EDX),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x4a}, "DecReg32", GPRegister32.EDX),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{(byte)0xff, (byte)0xca}, "DecReg32", GPRegister32.EDX),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{(byte)0xff, (byte)0xca}, "DecReg32", GPRegister32.EDX),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x66, 0x4b}, "DecReg32", GPRegister32.EBX),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x66, (byte)0xff, (byte)0xcb}, "DecReg32", GPRegister32.EBX),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x4b}, "DecReg32", GPRegister32.EBX),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{(byte)0xff, (byte)0xcb}, "DecReg32", GPRegister32.EBX),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{(byte)0xff, (byte)0xcb}, "DecReg32", GPRegister32.EBX),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x66, 0x4c}, "DecReg32", GPRegister32.ESP),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x66, (byte)0xff, (byte)0xcc}, "DecReg32", GPRegister32.ESP),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x4c}, "DecReg32", GPRegister32.ESP),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{(byte)0xff, (byte)0xcc}, "DecReg32", GPRegister32.ESP),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{(byte)0xff, (byte)0xcc}, "DecReg32", GPRegister32.ESP),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x66, 0x4d}, "DecReg32", GPRegister32.EBP),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x66, (byte)0xff, (byte)0xcd}, "DecReg32", GPRegister32.EBP),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x4d}, "DecReg32", GPRegister32.EBP),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{(byte)0xff, (byte)0xcd}, "DecReg32", GPRegister32.EBP),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{(byte)0xff, (byte)0xcd}, "DecReg32", GPRegister32.EBP),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x66, 0x4e}, "DecReg32", GPRegister32.ESI),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x66, (byte)0xff, (byte)0xce}, "DecReg32", GPRegister32.ESI),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x4e}, "DecReg32", GPRegister32.ESI),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{(byte)0xff, (byte)0xce}, "DecReg32", GPRegister32.ESI),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{(byte)0xff, (byte)0xce}, "DecReg32", GPRegister32.ESI),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x66, 0x4f}, "DecReg32", GPRegister32.EDI),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x66, (byte)0xff, (byte)0xcf}, "DecReg32", GPRegister32.EDI),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x4f}, "DecReg32", GPRegister32.EDI),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{(byte)0xff, (byte)0xcf}, "DecReg32", GPRegister32.EDI),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{(byte)0xff, (byte)0xcf}, "DecReg32", GPRegister32.EDI),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x41, (byte)0xff, (byte)0xc8}, "DecReg32", GPRegister32.R8D),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x41, (byte)0xff, (byte)0xc9}, "DecReg32", GPRegister32.R9D),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x41, (byte)0xff, (byte)0xca}, "DecReg32", GPRegister32.R10D),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x41, (byte)0xff, (byte)0xcb}, "DecReg32", GPRegister32.R11D),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x41, (byte)0xff, (byte)0xcc}, "DecReg32", GPRegister32.R12D),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x41, (byte)0xff, (byte)0xcd}, "DecReg32", GPRegister32.R13D),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x41, (byte)0xff, (byte)0xce}, "DecReg32", GPRegister32.R14D),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x41, (byte)0xff, (byte)0xcf}, "DecReg32", GPRegister32.R15D),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x48, (byte)0xff, (byte)0xc8}, "DecReg64", GPRegister64.RAX),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x48, (byte)0xff, (byte)0xc9}, "DecReg64", GPRegister64.RCX),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x48, (byte)0xff, (byte)0xca}, "DecReg64", GPRegister64.RDX),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x48, (byte)0xff, (byte)0xcb}, "DecReg64", GPRegister64.RBX),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x48, (byte)0xff, (byte)0xcc}, "DecReg64", GPRegister64.RSP),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x48, (byte)0xff, (byte)0xcd}, "DecReg64", GPRegister64.RBP),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x48, (byte)0xff, (byte)0xce}, "DecReg64", GPRegister64.RSI),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x48, (byte)0xff, (byte)0xcf}, "DecReg64", GPRegister64.RDI),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x49, (byte)0xff, (byte)0xc8}, "DecReg64", GPRegister64.R8),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x49, (byte)0xff, (byte)0xc9}, "DecReg64", GPRegister64.R9),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x49, (byte)0xff, (byte)0xca}, "DecReg64", GPRegister64.R10),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x49, (byte)0xff, (byte)0xcb}, "DecReg64", GPRegister64.R11),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x49, (byte)0xff, (byte)0xcc}, "DecReg64", GPRegister64.R12),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x49, (byte)0xff, (byte)0xcd}, "DecReg64", GPRegister64.R13),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x49, (byte)0xff, (byte)0xce}, "DecReg64", GPRegister64.R14),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x49, (byte)0xff, (byte)0xcf}, "DecReg64", GPRegister64.R15),
                 arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x40}, "IncReg16", GPRegister16.AX),
-                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x41}, "IncReg16", GPRegister16.CX),
-                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x42}, "IncReg16", GPRegister16.DX),
-                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x43}, "IncReg16", GPRegister16.BX),
-                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x44}, "IncReg16", GPRegister16.SP),
-                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x45}, "IncReg16", GPRegister16.BP),
-                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x46}, "IncReg16", GPRegister16.SI),
-                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x47}, "IncReg16", GPRegister16.DI),
-                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x66, 0x40}, "IncReg32", GPRegister32.EAX),
-                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x40}, "IncReg32", GPRegister32.EAX),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{(byte)0xff, (byte)0xc0}, "IncReg16", GPRegister16.AX),
                 arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x66, 0x40}, "IncReg16", GPRegister16.AX),
-                arguments(Instruction.Mode.ADDR32_DATA16, new Byte[]{0x40}, "IncReg16", GPRegister16.AX),
-                arguments(Instruction.Mode.ADDR32_DATA16, new Byte[]{0x66, 0x40}, "IncReg32", GPRegister32.EAX),
-                arguments(Instruction.Mode.ADDR32_DATA32, new Byte[]{0x40}, "IncReg32", GPRegister32.EAX),
-                arguments(Instruction.Mode.ADDR32_DATA32, new Byte[]{0x66, 0x40}, "IncReg16", GPRegister16.AX));
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x66, (byte)0xff, (byte)0xc0}, "IncReg16", GPRegister16.AX),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x66, (byte)0xff, (byte)0xc0}, "IncReg16", GPRegister16.AX),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x41}, "IncReg16", GPRegister16.CX),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{(byte)0xff, (byte)0xc1}, "IncReg16", GPRegister16.CX),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x66, 0x41}, "IncReg16", GPRegister16.CX),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x66, (byte)0xff, (byte)0xc1}, "IncReg16", GPRegister16.CX),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x66, (byte)0xff, (byte)0xc1}, "IncReg16", GPRegister16.CX),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x42}, "IncReg16", GPRegister16.DX),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{(byte)0xff, (byte)0xc2}, "IncReg16", GPRegister16.DX),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x66, 0x42}, "IncReg16", GPRegister16.DX),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x66, (byte)0xff, (byte)0xc2}, "IncReg16", GPRegister16.DX),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x66, (byte)0xff, (byte)0xc2}, "IncReg16", GPRegister16.DX),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x43}, "IncReg16", GPRegister16.BX),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{(byte)0xff, (byte)0xc3}, "IncReg16", GPRegister16.BX),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x66, 0x43}, "IncReg16", GPRegister16.BX),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x66, (byte)0xff, (byte)0xc3}, "IncReg16", GPRegister16.BX),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x66, (byte)0xff, (byte)0xc3}, "IncReg16", GPRegister16.BX),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x44}, "IncReg16", GPRegister16.SP),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{(byte)0xff, (byte)0xc4}, "IncReg16", GPRegister16.SP),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x66, 0x44}, "IncReg16", GPRegister16.SP),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x66, (byte)0xff, (byte)0xc4}, "IncReg16", GPRegister16.SP),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x66, (byte)0xff, (byte)0xc4}, "IncReg16", GPRegister16.SP),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x45}, "IncReg16", GPRegister16.BP),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{(byte)0xff, (byte)0xc5}, "IncReg16", GPRegister16.BP),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x66, 0x45}, "IncReg16", GPRegister16.BP),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x66, (byte)0xff, (byte)0xc5}, "IncReg16", GPRegister16.BP),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x66, (byte)0xff, (byte)0xc5}, "IncReg16", GPRegister16.BP),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x46}, "IncReg16", GPRegister16.SI),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{(byte)0xff, (byte)0xc6}, "IncReg16", GPRegister16.SI),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x66, 0x46}, "IncReg16", GPRegister16.SI),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x66, (byte)0xff, (byte)0xc6}, "IncReg16", GPRegister16.SI),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x66, (byte)0xff, (byte)0xc6}, "IncReg16", GPRegister16.SI),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x47}, "IncReg16", GPRegister16.DI),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{(byte)0xff, (byte)0xc7}, "IncReg16", GPRegister16.DI),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x66, 0x47}, "IncReg16", GPRegister16.DI),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x66, (byte)0xff, (byte)0xc7}, "IncReg16", GPRegister16.DI),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x66, (byte)0xff, (byte)0xc7}, "IncReg16", GPRegister16.DI),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x66, 0x41, (byte)0xff, (byte)0xc0}, "IncReg16", GPRegister16.R8W),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x66, 0x41, (byte)0xff, (byte)0xc1}, "IncReg16", GPRegister16.R9W),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x66, 0x41, (byte)0xff, (byte)0xc2}, "IncReg16", GPRegister16.R10W),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x66, 0x41, (byte)0xff, (byte)0xc3}, "IncReg16", GPRegister16.R11W),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x66, 0x41, (byte)0xff, (byte)0xc4}, "IncReg16", GPRegister16.R12W),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x66, 0x41, (byte)0xff, (byte)0xc5}, "IncReg16", GPRegister16.R13W),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x66, 0x41, (byte)0xff, (byte)0xc6}, "IncReg16", GPRegister16.R14W),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x66, 0x41, (byte)0xff, (byte)0xc7}, "IncReg16", GPRegister16.R15W),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x66, 0x40}, "IncReg32", GPRegister32.EAX),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x66, (byte)0xff, (byte)0xc0}, "IncReg32", GPRegister32.EAX),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x40}, "IncReg32", GPRegister32.EAX),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{(byte)0xff, (byte)0xc0}, "IncReg32", GPRegister32.EAX),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{(byte)0xff, (byte)0xc0}, "IncReg32", GPRegister32.EAX),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x66, 0x41}, "IncReg32", GPRegister32.ECX),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x66, (byte)0xff, (byte)0xc1}, "IncReg32", GPRegister32.ECX),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x41}, "IncReg32", GPRegister32.ECX),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{(byte)0xff, (byte)0xc1}, "IncReg32", GPRegister32.ECX),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{(byte)0xff, (byte)0xc1}, "IncReg32", GPRegister32.ECX),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x66, 0x42}, "IncReg32", GPRegister32.EDX),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x66, (byte)0xff, (byte)0xc2}, "IncReg32", GPRegister32.EDX),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x42}, "IncReg32", GPRegister32.EDX),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{(byte)0xff, (byte)0xc2}, "IncReg32", GPRegister32.EDX),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{(byte)0xff, (byte)0xc2}, "IncReg32", GPRegister32.EDX),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x66, 0x43}, "IncReg32", GPRegister32.EBX),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x66, (byte)0xff, (byte)0xc3}, "IncReg32", GPRegister32.EBX),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x43}, "IncReg32", GPRegister32.EBX),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{(byte)0xff, (byte)0xc3}, "IncReg32", GPRegister32.EBX),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{(byte)0xff, (byte)0xc3}, "IncReg32", GPRegister32.EBX),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x66, 0x44}, "IncReg32", GPRegister32.ESP),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x66, (byte)0xff, (byte)0xc4}, "IncReg32", GPRegister32.ESP),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x44}, "IncReg32", GPRegister32.ESP),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{(byte)0xff, (byte)0xc4}, "IncReg32", GPRegister32.ESP),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{(byte)0xff, (byte)0xc4}, "IncReg32", GPRegister32.ESP),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x66, 0x45}, "IncReg32", GPRegister32.EBP),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x66, (byte)0xff, (byte)0xc5}, "IncReg32", GPRegister32.EBP),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x45}, "IncReg32", GPRegister32.EBP),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{(byte)0xff, (byte)0xc5}, "IncReg32", GPRegister32.EBP),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{(byte)0xff, (byte)0xc5}, "IncReg32", GPRegister32.EBP),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x66, 0x46}, "IncReg32", GPRegister32.ESI),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x66, (byte)0xff, (byte)0xc6}, "IncReg32", GPRegister32.ESI),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x46}, "IncReg32", GPRegister32.ESI),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{(byte)0xff, (byte)0xc6}, "IncReg32", GPRegister32.ESI),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{(byte)0xff, (byte)0xc6}, "IncReg32", GPRegister32.ESI),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x66, 0x47}, "IncReg32", GPRegister32.EDI),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x66, (byte)0xff, (byte)0xc7}, "IncReg32", GPRegister32.EDI),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x47}, "IncReg32", GPRegister32.EDI),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{(byte)0xff, (byte)0xc7}, "IncReg32", GPRegister32.EDI),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{(byte)0xff, (byte)0xc7}, "IncReg32", GPRegister32.EDI),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x41, (byte)0xff, (byte)0xc0}, "IncReg32", GPRegister32.R8D),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x41, (byte)0xff, (byte)0xc1}, "IncReg32", GPRegister32.R9D),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x41, (byte)0xff, (byte)0xc2}, "IncReg32", GPRegister32.R10D),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x41, (byte)0xff, (byte)0xc3}, "IncReg32", GPRegister32.R11D),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x41, (byte)0xff, (byte)0xc4}, "IncReg32", GPRegister32.R12D),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x41, (byte)0xff, (byte)0xc5}, "IncReg32", GPRegister32.R13D),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x41, (byte)0xff, (byte)0xc6}, "IncReg32", GPRegister32.R14D),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x41, (byte)0xff, (byte)0xc7}, "IncReg32", GPRegister32.R15D),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x48, (byte)0xff, (byte)0xc0}, "IncReg64", GPRegister64.RAX),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x48, (byte)0xff, (byte)0xc1}, "IncReg64", GPRegister64.RCX),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x48, (byte)0xff, (byte)0xc2}, "IncReg64", GPRegister64.RDX),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x48, (byte)0xff, (byte)0xc3}, "IncReg64", GPRegister64.RBX),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x48, (byte)0xff, (byte)0xc4}, "IncReg64", GPRegister64.RSP),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x48, (byte)0xff, (byte)0xc5}, "IncReg64", GPRegister64.RBP),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x48, (byte)0xff, (byte)0xc6}, "IncReg64", GPRegister64.RSI),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x48, (byte)0xff, (byte)0xc7}, "IncReg64", GPRegister64.RDI),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x49, (byte)0xff, (byte)0xc0}, "IncReg64", GPRegister64.R8),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x49, (byte)0xff, (byte)0xc1}, "IncReg64", GPRegister64.R9),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x49, (byte)0xff, (byte)0xc2}, "IncReg64", GPRegister64.R10),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x49, (byte)0xff, (byte)0xc3}, "IncReg64", GPRegister64.R11),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x49, (byte)0xff, (byte)0xc4}, "IncReg64", GPRegister64.R12),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x49, (byte)0xff, (byte)0xc5}, "IncReg64", GPRegister64.R13),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x49, (byte)0xff, (byte)0xc6}, "IncReg64", GPRegister64.R14),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x49, (byte)0xff, (byte)0xc7}, "IncReg64", GPRegister64.R15));
+    }
+
+    static @NotNull Stream<Arguments> decIncMemoryEncodings() {
+        return Stream.of(
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x26, (byte)0xff, 0x49, 0x01}, "DecAddr16Mem16",
+                        "GPAddress16", SegmentRegister.ES, GPRegister16.BX, GPRegister16.DI, null, (short)1, (short)16),
+                arguments(Instruction.Mode.ADDR32_DATA32, new Byte[]{0x2e, 0x66, (byte)0xff, 0x4c, 0x08, 0x02}, "DecAddr32Mem16",
+                        "GPAddress32", SegmentRegister.CS, GPRegister32.EAX, GPRegister32.ECX, ScaleFactor.X1, 2, (short) 16),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x36, (byte)0xff, 0x4c, 0x72, 0x03}, "DecAddr64Mem32",
+                        "GPAddress64", SegmentRegister.SS, GPRegister64.RDX, GPRegister64.RSI, ScaleFactor.X2, 3, (short) 32),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x3e, 0x67, 0x48, (byte)0xff, 0x0d, 0x04, 0x00, 0x00, 0x00}, "DecEIPAddr32Mem64",
+                        "EIPAddress32", SegmentRegister.DS, null, null, null, 4, (short) 64),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x64, (byte)0xff, 0x0d, 0x05, 0x00, 0x00, 0x00}, "DecRIPAddr64Mem32",
+                        "RIPAddress64", SegmentRegister.FS, null, null, null, 5, (short) 32),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x26, (byte)0xff, 0x41, 0x01}, "IncAddr16Mem16",
+                        "GPAddress16", SegmentRegister.ES, GPRegister16.BX, GPRegister16.DI, null, (short)1, (short)16),
+                arguments(Instruction.Mode.ADDR32_DATA32, new Byte[]{0x2e, 0x66, (byte)0xff, 0x44, 0x08, 0x02}, "IncAddr32Mem16",
+                        "GPAddress32", SegmentRegister.CS, GPRegister32.EAX, GPRegister32.ECX, ScaleFactor.X1, 2, (short) 16),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x36, (byte)0xff, 0x44, 0x72, 0x03}, "IncAddr64Mem32",
+                        "GPAddress64", SegmentRegister.SS, GPRegister64.RDX, GPRegister64.RSI, ScaleFactor.X2, 3, (short) 32),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x3e, 0x67, 0x48, (byte)0xff, 0x05, 0x04, 0x00, 0x00, 0x00}, "IncEIPAddr32Mem64",
+                        "EIPAddress32", SegmentRegister.DS, null, null, null, 4, (short) 64),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x64, (byte)0xff, 0x05, 0x05, 0x00, 0x00, 0x00}, "IncRIPAddr64Mem32",
+                        "RIPAddress64", SegmentRegister.FS, null, null, null, 5, (short) 32));
     }
 
     static @NotNull Stream<Arguments> nopEncodings() {
@@ -104,7 +322,7 @@ public class InstructionTest {
                 arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x48, 0x2b, (byte) 0xca}, "SubReg64Reg64", GPRegister64.RCX, GPRegister64.RDX));
     }
 
-    static @NotNull Stream<Arguments> twoArgumentAddressEncoding() {
+    static @NotNull Stream<Arguments> twoArgumentMemoryEncoding() {
         return Stream.of(
                 arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x26, 0x02, 0x49, 0x01}, "AddReg8Addr16Mem8",
                         GPRegister8.CL, "GPAddress16", SegmentRegister.ES, GPRegister16.BX, GPRegister16.DI, null, (short)1, (short)8),
@@ -118,7 +336,7 @@ public class InstructionTest {
                         GPRegister8.AH, "RIPAddress64", SegmentRegister.FS, null, null, null, 5, (short) 8));
     }
 
-    private static Stream<Arguments> xchgAccumulatorRegEncodings() {
+    private static @NotNull Stream<Arguments> xchgAccumulatorRegEncodings() {
         return Stream.of(
                 arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{(byte) 0x91}, "XchgReg16Reg16", GPRegister16.AX, GPRegister16.CX),
                 arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{(byte) 0x92}, "XchgReg16Reg16", GPRegister16.AX, GPRegister16.DX),
@@ -199,9 +417,9 @@ public class InstructionTest {
     }
 
     @ParameterizedTest
-    @MethodSource("decIncEncodings")
-    @DisplayName("Dec/Inc parse test")
-    void testParseInc(@NotNull Instruction.Mode mode, Byte[] opcodes, String name, Object register) {
+    @MethodSource("decIncRegisterEncodings")
+    @DisplayName("Dec/Inc registers parse test")
+    void testParseRegisterInc(@NotNull Instruction.Mode mode, Byte[] opcodes, String name, Object register) {
         Optional<Instruction> instruction =
                 Instruction.parse(mode, new RollbackIterator<>(Arrays.asList(opcodes).iterator()));
         assertEquals(
@@ -218,7 +436,70 @@ public class InstructionTest {
             public GPRegister32 when(@NotNull GPRegister32 argument) {
                 return argument;
             }
+
+            @Override
+            public GPRegister64 when(@NotNull GPRegister64 argument) {
+                return argument;
+            }
         }));
+    }
+
+    @ParameterizedTest
+    @MethodSource("decIncMemoryEncodings")
+    @DisplayName("Dec/Inc memory parse test")
+    void testParseMemoryInc(
+            @NotNull Instruction.Mode mode, Byte[] opcodes, String name,
+            String addr_name, SegmentRegister segment, Object base, Object index, Object scale, Object disp, short size)
+            throws Exception {
+        Optional<Instruction> instruction =
+                Instruction.parse(mode, new RollbackIterator<>(Arrays.asList(opcodes).iterator()));
+        assertEquals(
+                "org.yajd.x86.cpu.Instruction$" + name,
+                instruction.get().getClass().getName());
+        var arguments = instruction.get().getArguments();
+        var address = arguments[0].process(new Argument.Result<Object>() {
+            @Override
+            public GPAddress16 when(@NotNull GPAddress16 argument) {
+                return argument;
+            }
+
+            @Override
+            public GPAddress32 when(@NotNull GPAddress32 argument) {
+                return argument;
+            }
+
+            @Override
+            public EIPAddress32 when(@NotNull EIPAddress32 argument) {
+                return argument;
+            }
+
+            @Override
+            public GPAddress64 when(@NotNull GPAddress64 argument) {
+                return argument;
+            }
+
+            @Override
+            public RIPAddress64 when(@NotNull RIPAddress64 argument) {
+                return argument;
+            }
+        });
+        assertEquals(
+                "org.yajd.x86.cpu." + addr_name,
+                address.getClass().getName());
+        if (segment != null) {
+            assertEquals(Optional.of(segment), address.getClass().getMethod("getSegment").invoke(address));
+        }
+        if (base != null) {
+            assertEquals(Optional.of(base), address.getClass().getMethod("getBase").invoke(address));
+        }
+        if (index != null) {
+            assertEquals(Optional.of(index), address.getClass().getMethod("getIndex").invoke(address));
+        }
+        if (scale != null) {
+            assertEquals(scale, address.getClass().getMethod("getScale").invoke(address));
+        }
+        assertEquals(disp, address.getClass().getMethod("getDisp").invoke(address));
+        assertEquals(size, address.getClass().getMethod("getSize").invoke(address));
     }
 
     @ParameterizedTest
@@ -235,7 +516,7 @@ public class InstructionTest {
     }
 
     @ParameterizedTest
-    @MethodSource("twoArgumentAddressEncoding")
+    @MethodSource("twoArgumentMemoryEncoding")
     @DisplayName("Two argument address instructions test")
     void testParseTwoArgumentAddressInstructions(
             @NotNull Instruction.Mode mode, Byte[] opcodes, String name, Object register,
