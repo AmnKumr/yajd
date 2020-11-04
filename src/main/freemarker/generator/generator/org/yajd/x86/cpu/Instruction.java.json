@@ -45,66 +45,67 @@
       {
         "arguments" : [],
         "names" : {
-          "nop" : "0x90"
+          "nop" : "0x66? 0xf2? 0x90",
+          "pause" : "0x66? 0xf3 0x90"
         }
       },
       {
         "arguments" : ["AX:GPRegisterNative", "Op:GPRegisterNative"],
         "names" : {
-          "xchg" : "0x90"
+          "xchg" : "0xf2? 0xf3? 0x90"
         }
       },
       {
         "arguments" : ["Op:GPRegisterNative" ],
         "names" : {
-          "dec" : "0x48",
-          "inc" : "0x40"
+          "dec" : "0xf2? 0xf3? 0x48",
+          "inc" : "0xf2? 0xf3? 0x40"
         }
       },
       {
         "arguments" : ["Reg:GPRegister8", "Rm:GPRegister8/Memory8" ],
         "names" : {
-          "add" : "0x02",
-          "mov" : "0x8a",
-          "sub" : "0x2a"
+          "add" : "0x66? 0xf2? 0xf3? rexw? 0x02",
+          "mov" : "0x66? 0xf2? 0xf3? rexw? 0x8a",
+          "sub" : "0x66? 0xf2? 0xf3? rexw? 0x2a"
         }
       },
       {
         "arguments" : ["Reg:GPRegisterNative", "Rm:GPRegisterNative/MemoryNative" ],
         "names" : {
-          "add" : "0x03",
-          "mov" : "0x8b",
-          "sub" : "0x2b"
+          "add" : "0xf2? 0xf3? 0x03",
+          "mov" : "0xf2? 0xf3? 0x8b",
+          "sub" : "0xf2? 0xf3? 0x2b"
         }
       },
       {
         "arguments" : ["Rm:GPRegister8/Memory8" ],
         "names" : {
-          "dec" : "0xfe /1",
-          "inc" : "0xfe /0"
+          "dec" : "0x66? 0xf2? 0xf3? rexw? 0xfe /1",
+          "inc" : "0x66? 0xf2? 0xf3? rexw? 0xfe /0"
         }
       },
       {
         "arguments" : ["Rm:GPRegisterNative/MemoryNative" ],
         "names" : {
-          "dec" : "0xff /1",
-          "inc" : "0xff /0"
+          "dec" : "0xf2? 0xf3? 0xff /1",
+          "inc" : "0xf2? 0xf3? 0xff /0"
         }
       },
       {
         "arguments" : ["Rm:GPRegister8/Memory8", "Reg:GPRegister8" ],
         "names" : {
-          "add" : "0x00",
-          "mov" : "0x88",
-          "sub" : "0x28"
+          "add" : "0x66? 0xf2? 0xf3? rexw? 0x00",
+          "mov" : "0x66? 0xf2? 0xf3? rexw? 0x88",
+          "sub" : "0x66? 0xf2? 0xf3? rexw? 0x28"
         }
       },
       {
         "arguments" : ["Rm:GPRegisterNative/MemoryNative", "Reg:GPRegisterNative" ],
         "names" : {
-          "add" : "0x01",
-          "mov" : "0x89",
-          "sub" : "0x29"
+          "add" : "0xf2? 0xf3? 0x01",
+          "mov" : "0xf2? 0xf3? 0x89",
+          "sub" : "0xf2? 0xf3? 0x29"
         }
       }
     ]

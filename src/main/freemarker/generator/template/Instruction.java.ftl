@@ -299,6 +299,16 @@
         <#return operand_in_opcode(arguments[1..])>
     </#if>
 </#function>
+<#function opcode_optional_prefixes_expand opcode>
+    <#if opcode?contains("?")>
+        <#return opcode_optional_prefixes_expand(
+                     opcode?keep_before("?")?ensure_starts_with(" ")?keep_before_last(" ") + opcode?keep_after("?")) +
+                 opcode_optional_prefixes_expand(
+                     opcode?keep_before("?") + opcode?keep_after("?"))>
+    <#else>
+        <#return [opcode?trim]>
+    </#if>
+</#function>
 <#function generate_opcodes_map opcodes_variant expanded_instruction_classes_list>
     Note: freemarker documentation says quite explicitly: “Note that hash concatenation is not to
           be used for many repeated concatenations, like for adding items to a hash inside a loop”.
@@ -316,35 +326,40 @@
                     <#local opcode = instruction_opcode>
                 </#if>
                 <#if opcode != "">
-                    <#if operand_in_opcode(instruction_class.arguments)>
-                        <#if opcode?ends_with("0")>
-                            <#local suffixes = ["0", "1", "2", "3", "4", "5", "6", "7"]>
+                    <#list opcode_optional_prefixes_expand(opcode) as opcode>
+                        <#if operand_in_opcode(instruction_class.arguments)>
+                            <#if opcode?ends_with("0")>
+                                <#local suffixes = ["0", "1", "2", "3", "4", "5", "6", "7"]>
+                            <#else>
+                                <#local suffixes = ["8", "9", "a", "b", "c", "d", "e", "f"]>
+                            </#if>
+                            <#list suffixes as suffix>
+                                "${opcode[0..<(opcode?length-1)]}${suffix}" : {
+                                    "name" : "${classname(instruction_name, instruction_class.arguments)}",
+                                    "arguments" : ["${instruction_class.arguments?join("\", \"")}"]
+                                },
+                            </#list>
                         <#else>
-                            <#local suffixes = ["8", "9", "a", "b", "c", "d", "e", "f"]>
-                        </#if>
-                        <#list suffixes as suffix>
-                            "${opcode[0..<(opcode?length-1)]}${suffix}" : {
+                            "${opcode}" : {
                                 "name" : "${classname(instruction_name, instruction_class.arguments)}",
                                 "arguments" : ["${instruction_class.arguments?join("\", \"")}"]
                             },
-                        </#list>
-                    <#else>
-                        "${opcode}" : {
-                            "name" : "${classname(instruction_name, instruction_class.arguments)}",
-                        <#if instruction_class.arguments?size == 0>
-                            "arguments" : []
-                        <#else>
-                            "arguments" : ["${instruction_class.arguments?join("\", \"")}"]
                         </#if>
-                        },
-                    </#if>
+                    </#list>
                 </#if>
             </#list>
         </#list>
     </#assign>
     Evaluate Nop last to make sure it would be choosen over “xchg %ax, %ax”
-    <#assign opcodes_map_text =
-        "{${opcodes_map_text}\"0x90\": { \"name\": \"Nop\", \"arguments\": [] }}"?eval>
+    <#assign opcodes_map_text = (
+            "{${opcodes_map_text}" +
+            " \"0x90\": { \"name\": \"Nop\", \"arguments\": [] }," +
+            " \"0x66 0x90\": { \"name\": \"Nop\", \"arguments\": [] }," +
+            " \"0xf2 0x90\": { \"name\": \"Nop\", \"arguments\": [] }," +
+            " \"0x66 0xf2 0x90\": { \"name\": \"Nop\", \"arguments\": [] }," +
+            " \"0xf3 0x90\": { \"name\": \"Pause\", \"arguments\": [] }," +
+            " \"0x66 0xf3 0x90\": { \"name\": \"Pause\", \"arguments\": [] }}"
+        )?eval>
     <#return opcodes_map_text>
 </#function>
 <#function prefix_opcode_map opcode_map>
@@ -885,7 +900,8 @@ public interface Instruction {
                             /* fallthrough */
                             </#if>
                         <#else>
-                            <#if opcode_prefix + opcode_value == "0x90">
+                            <#if element_in_list(opcode_prefix + opcode_value,
+                                ["0x90", "0x66 0x90", "0xf2 0x90", "0xf3 0x90", "0x66 0xf2 0x90", "0x66 0xf3 0x90"])>
                             // If there are REX.B prefix then 0x90 is not interpreted as NOP, but as Xchg.
                             // Note: objdump erroneously decodes, e.g., 0x40 0x90 as xchg - but that one is actually NOP.
                             if ((final_rex_prefix & 0b0000_0_0_0_1) == 0)
