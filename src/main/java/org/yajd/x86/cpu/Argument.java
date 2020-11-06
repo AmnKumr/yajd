@@ -44,6 +44,22 @@ public interface Argument {
             return when(argument.toArgument());
         }
 
+        default Type when(@NotNull Imm8 argumet) {
+            return when((Argument)argumet);
+        }
+
+        default Type when(@NotNull Imm16 argumet) {
+            return when((Argument)argumet);
+        }
+
+        default Type when(@NotNull Imm32 argumet) {
+            return when((Argument)argumet);
+        }
+
+        default Type when(@NotNull Imm64 argumet) {
+            return when((Argument)argumet);
+        }
+
         default Type when(@NotNull GPAddress16 argument) {
             return when(argument.toArgument());
         }

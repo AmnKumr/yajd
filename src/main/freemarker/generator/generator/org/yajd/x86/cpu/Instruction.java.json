@@ -16,6 +16,10 @@
   "templateName": "Instruction.java.ftl",
   "dataModel": {
     "argument_to_class_name" : {
+      "Imm8": "Imm8",
+      "Imm16": "Imm16",
+      "Imm32": "Imm32",
+      "Imm64": "Imm64",
       "GPRegister8": "Reg8",
       "GPRegister16": "Reg16",
       "GPRegister32": "Reg32",
@@ -41,6 +45,36 @@
       "RIPAddress64/32": "RIPAddr64Mem32",
       "RIPAddress64/64": "RIPAddr64Mem64"
     },
+    "argumeng_name_to_type_name": {
+      "Imm8": "byte",
+      "Imm16": "short",
+      "Imm32": "int",
+      "Imm64": "long",
+      "GPRegister8": "GPRegister8",
+      "GPRegister16": "GPRegister16",
+      "GPRegister32": "GPRegister32",
+      "GPRegister64": "GPRegister64",
+      "GPAddress16/8": "GPAddress16",
+      "GPAddress16/16": "GPAddress16",
+      "GPAddress16/32": "GPAddress16",
+      "GPAddress16/64": "GPAddress16",
+      "GPAddress32/8": "GPAddress32",
+      "GPAddress32/16": "GPAddress32",
+      "GPAddress32/32": "GPAddress32",
+      "GPAddress32/64": "GPAddress32",
+      "EIPAddress32/8": "EIPAddress32",
+      "EIPAddress32/16": "EIPAddress32",
+      "EIPAddress32/32": "EIPAddress32",
+      "EIPAddress32/64": "EIPAddress32",
+      "GPAddress64/8": "GPAddress64",
+      "GPAddress64/16": "GPAddress64",
+      "GPAddress64/32": "GPAddress64",
+      "GPAddress64/64": "GPAddress64",
+      "RIPAddress64/8": "RIPAddress64",
+      "RIPAddress64/16": "RIPAddress64",
+      "RIPAddress64/32": "RIPAddress64",
+      "RIPAddress64/64": "RIPAddress64"
+    },
     "instructions": [
       {
         "arguments" : [],
@@ -56,10 +90,28 @@
         }
       },
       {
+        "arguments" : ["Imm0:Imm8"],
+        "names" : {
+          "aad" : "0x66? 0xf2? 0xf3? 0xd5"
+        }
+      },
+      {
+        "arguments" : ["Op:GPRegister8", "Imm0:Imm8" ],
+        "names" : {
+          "mov" : "0x66? 0xf2? 0xf3? rexw? 0xb0"
+        }
+      },
+      {
         "arguments" : ["Op:GPRegisterNative" ],
         "names" : {
           "dec" : "0xf2? 0xf3? 0x48",
           "inc" : "0xf2? 0xf3? 0x40"
+        }
+      },
+      {
+        "arguments" : ["Op:GPRegisterNative", "Imm0:ImmNative64" ],
+        "names" : {
+          "mov" : "0xf2? 0xf3? 0xb8"
         }
       },
       {
@@ -86,10 +138,22 @@
         }
       },
       {
+        "arguments" : ["Rm:GPRegister8/Memory8", "Imm0:Imm8" ],
+        "names" : {
+          "mov" : "0x66? 0xf2? 0xf3? rexw? 0xc6 /0"
+        }
+      },
+      {
         "arguments" : ["Rm:GPRegisterNative/MemoryNative" ],
         "names" : {
           "dec" : "0xf2? 0xf3? 0xff /1",
           "inc" : "0xf2? 0xf3? 0xff /0"
+        }
+      },
+      {
+        "arguments" : ["Rm:GPRegisterNative/MemoryNative", "Imm0:ImmNative" ],
+        "names" : {
+          "mov" : "0x66? 0xf2? 0xf3? rexw? 0xc7 /0"
         }
       },
       {
