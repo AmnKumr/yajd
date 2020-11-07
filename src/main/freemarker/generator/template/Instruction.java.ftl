@@ -266,12 +266,12 @@
     <#elseif merged_instructions?filter(
                  x -> same_argument_lists(x.arguments, original_instructions[0].arguments))?size == 0>
         <#return merge_instruction(merged_instructions + [
-            original_instructions[0] + {"names": original_instructions[0].names?keys}],
+            original_instructions[0] + {"names": original_instructions[0].names?keys?map(x -> x?keep_before("/"))}],
             original_instructions[1..])>
     <#else>
         <#local filtered_names = filter_out_instructions(merged_instructions?filter(
                     x -> same_argument_lists(x.arguments, original_instructions[0].arguments))?map(
-                    x -> x.names), original_instructions[0].names?keys)>
+                    x -> x.names), original_instructions[0].names?keys?map(x -> x?keep_before("/")))>
         <#if filtered_names?size != 0>
             <#return merge_instruction(merged_instructions + [
                  original_instructions[0] + {"names": filtered_names}],
@@ -286,7 +286,7 @@
 </#function>
 <#function classname name arguments>
     <#local result>${
-        name?capitalize}<#list arguments as argument>${
+        name?keep_before("/")?capitalize}<#list arguments as argument>${
         argument_to_class_name[argument?keep_after(":")]
     }</#list></#local>
     <#return result>
@@ -310,7 +310,7 @@
         <#return [opcode?trim]>
     </#if>
 </#function>
-<#function generate_opcodes_map opcodes_variant expanded_instruction_classes_list>
+<#function generate_opcodes_map opcodes_variant skip_suffix expanded_instruction_classes_list>
     Note: freemarker documentation says quite explicitly: “Note that hash concatenation is not to
           be used for many repeated concatenations, like for adding items to a hash inside a loop”.
     That′s why we first are making a string and then using eval to make a map.
@@ -326,7 +326,7 @@
                 <#else>
                     <#local opcode = instruction_opcode>
                 </#if>
-                <#if opcode != "">
+                <#if !instruction_name?ends_with("/"+skip_suffix) && opcode != "">
                     <#list opcode_optional_prefixes_expand(opcode) as opcode>
                         <#if operand_in_opcode(instruction_class.arguments)>
                             <#if opcode?ends_with("0")>
@@ -393,17 +393,21 @@
      The simplest way to handle that is not have separate opcode maps for 16bit data width,
      32bit data width and ADDR64_DATA32 (which also have 32bit data width by default, but
      supports 64bit data width with REX.W prefix bit). -->
-<#assign opcode_map_16 = generate_opcodes_map(0, expanded_instruction_classes_list)>
-<#assign opcode_map_32 = generate_opcodes_map(1, expanded_instruction_classes_list)>
-<#assign opcode_map_64 = generate_opcodes_map(2, expanded_instruction_classes_list)>
+<#assign opcode_map_16_x32 = generate_opcodes_map(0, "x64", expanded_instruction_classes_list)>
+<#assign opcode_map_16_x64 = generate_opcodes_map(0, "x32", expanded_instruction_classes_list)>
+<#assign opcode_map_32_x32 = generate_opcodes_map(1, "x64", expanded_instruction_classes_list)>
+<#assign opcode_map_32_x64 = generate_opcodes_map(1, "x32", expanded_instruction_classes_list)>
+<#assign opcode_map_64 = generate_opcodes_map(2, "x32", expanded_instruction_classes_list)>
 <#-- We need to know if it makes sense to continue to parse instruction after certain “prefix”
      part. For example PF2IW have opcode “0x0f 0x0f 0x1c” where 0x1c part comes in place of
      immediate. We need to ensure parsing would stop at “0x0f 0x0f”.
 
      But in some cases prefix is also a valid instruction by itself. E.g. CMPPS have opcode
      “0x0f 0xc2” yet CMPEQPS have opcode “0x0f 0xc2 0x00” and we need to handle both of these. -->
-<#assign prefix_opcode_map_16 = prefix_opcode_map(opcode_map_16)>
-<#assign prefix_opcode_map_32 = prefix_opcode_map(opcode_map_32)>
+<#assign prefix_opcode_map_16_x32 = prefix_opcode_map(opcode_map_16_x32)>
+<#assign prefix_opcode_map_16_x64 = prefix_opcode_map(opcode_map_16_x64)>
+<#assign prefix_opcode_map_32_x32 = prefix_opcode_map(opcode_map_32_x32)>
+<#assign prefix_opcode_map_32_x64 = prefix_opcode_map(opcode_map_32_x64)>
 <#assign prefix_opcode_map_64 = prefix_opcode_map(opcode_map_64)>
 <#-- Opcodes are typically one-byte on x86. To process these we need a list of all possible
      byte values.  But freemarker doesn't make it easy to create one. -->
@@ -567,29 +571,29 @@ Optional.of(new ${instruction_name}(<#list instruction.arguments as argument
 </#macro>
 <#macro select_insruction_by_immediate indent opcode target_addr>
     <#-- We only have refined instructions if opcode is both bpcode for instructions and prefix for refixned one -->
-    <#if prefix_opcode_map[opcode]??>
+    <#if prefix_opcode_map_x32[opcode]??>
         <#local refined_instructions = 0>
         <#list byte_vaues as opcode_value>
-            <#if opcode_map[opcode + " +0x" + opcode_value]??>
+            <#if opcode_map_x32[opcode + " +0x" + opcode_value]??>
                 <#local refined_instructions = refined_instructions + 1>
             </#if>
         </#list>
         <#if 1 == refined_instructions>
             <#list byte_vaues as opcode_value>
-                <#if opcode_map[opcode + " +0x" + opcode_value]??>
+                <#if opcode_map_x32[opcode + " +0x" + opcode_value]??>
                     <#local refined_instructions = refined_instructions + 1>
         ${indent}if (immediate_argument0.get() == <@value_to_byte opcode_value/>) {
-        ${indent}    return <@make_instruction target_addr opcode_map[opcode + " +0x" + opcode_value]/>;
+        ${indent}    return <@make_instruction target_addr opcode_map_x32[opcode + " +0x" + opcode_value]/>;
         ${indent}}
                 </#if>
             </#list>
         <#elseif 1 < refined_instructions>
         ${indent}switch (immediate_argument0.get()) {
             <#list byte_vaues as opcode_value>
-                <#if opcode_map[opcode + " +0x" + opcode_value]??>
+                <#if opcode_map_x32[opcode + " +0x" + opcode_value]??>
                     <#local refined_instructions = refined_instructions + 1>
         ${indent}    case <@value_to_byte opcode_value/>:
-        ${indent}        return <@make_instruction target_addr opcode_map[opcode + " +0x" + opcode_value]/>;
+        ${indent}        return <@make_instruction target_addr opcode_map_x32[opcode + " +0x" + opcode_value]/>;
                 </#if>
             </#list>
         ${indent}}
@@ -957,10 +961,24 @@ public interface Instruction {
             final boolean final_x67_prefix = x67_prefix;
             final boolean final_lock_prefix = lock_prefix;
             final byte opcode = it.next();
-<#list [64, 32, 16] as NativeOperandSize>
-    <@"<#assign opcode_map = opcode_map_${NativeOperandSize}>"?interpret />
-    <@"<#assign prefix_opcode_map = prefix_opcode_map_${NativeOperandSize}>"?interpret />
-            Supplier<Optional<Instruction>> parse_${NativeOperandSize}bit_instruction = () -> {
+<#list [16, 32, 64] as native_operand_size>
+    <#if native_operand_size == 16>
+        <#assign opcode_map_x32 = opcode_map_16_x32>
+        <#assign opcode_map_x64 = opcode_map_16_x64>
+        <#assign prefix_opcode_map_x32 = prefix_opcode_map_16_x32>
+        <#assign prefix_opcode_map_x64 = prefix_opcode_map_16_x64>
+    <#elseif native_operand_size == 32>
+        <#assign opcode_map_x32 = opcode_map_32_x32>
+        <#assign opcode_map_x64 = opcode_map_32_x64>
+        <#assign prefix_opcode_map_x32 = prefix_opcode_map_32_x32>
+        <#assign prefix_opcode_map_x64 = prefix_opcode_map_32_x64>
+    <#else>
+        <#assign opcode_map_x32 = opcode_map_64>
+        <#assign opcode_map_x64 = opcode_map_64>
+        <#assign prefix_opcode_map_x32 = prefix_opcode_map_64>
+        <#assign prefix_opcode_map_x64 = prefix_opcode_map_64>
+    </#if>
+            Supplier<Optional<Instruction>> parse_${native_operand_size}bit_instruction = () -> {
     <#list ["", "0x66"] as X66Prefix>
         <#list ["", "0xf2", "0xf3"] as Xf2Xf3Prefix>
             <#if X66Prefix == "">
@@ -976,23 +994,40 @@ public interface Instruction {
                     <#assign opcode_prefix>${X66Prefix} ${Xf2Xf3Prefix} </#assign>
                 </#if>
             </#if>
-            <#if NativeOperandSize == 64>
+            <#if native_operand_size == 64>
                 <#assign opcode_prefix>${opcode_prefix}rexw </#assign>
             </#if>
             <#assign opcode_prefix>${opcode_prefix}0x</#assign>
                 Supplier<Optional<Instruction>> parse_${X66Prefix}_${Xf2Xf3Prefix}_instruction = () -> {
                     switch (opcode) {
             <#list byte_vaues?filter(x -> !element_in_list(x, ["66", "f2", "f3"])) as opcode_value>
-                <#if opcode_map[opcode_prefix + opcode_value]?? ||
-                     prefix_opcode_map[opcode_prefix + opcode_value]??>
+                <#if opcode_map_x32[opcode_prefix + opcode_value]?? ||
+                     opcode_map_x64[opcode_prefix + opcode_value]?? ||
+                     prefix_opcode_map_x32[opcode_prefix + opcode_value]?? ||
+                     prefix_opcode_map_x64[opcode_prefix + opcode_value]??>
                         case <@value_to_byte opcode_value/>:
                     <#-- Handle register operant in opcode -->
-                    <#if opcode_map[opcode_prefix + opcode_value]??>
-                        <#assign instruction = opcode_map[opcode_prefix + opcode_value]>
+                    <#if opcode_map_x32[opcode_prefix + opcode_value]?? ||
+                         opcode_map_x64[opcode_prefix + opcode_value]??>
+                        <#if opcode_map_x32[opcode_prefix + opcode_value]??>
+                            <#assign instruction = opcode_map_x32[opcode_prefix + opcode_value]>
+                        <#else>
+                            <#assign instruction = opcode_map_x64[opcode_prefix + opcode_value]>
+                        </#if>
                         <#if argument_in_opcode(instruction)>
                             <#-- Instructions with operands in opcode would occupy case lines -->
                             <#if opcode_value[1] == '7' || opcode_value[1] == 'f'>
                             {
+                            <#if !opcode_map_x32[opcode_prefix + opcode_value]??>
+                                if (mode != Mode.ADDR64_DATA32) {
+                                    return Optional.empty();
+                                }
+                            </#if>
+                            <#if !opcode_map_x64[opcode_prefix + opcode_value]??>
+                                if (mode == Mode.ADDR64_DATA32) {
+                                    return Optional.empty();
+                                }
+                            </#if>
                                 var opcode_argument = <@argument_from_opcode
                                    instruction "opcode" "final_rex_prefix"/>;
                                 <@parse_immediate_and_implicit_aruments ""?left_pad(24) instruction/>
@@ -1009,6 +1044,16 @@ public interface Instruction {
                             if ((final_rex_prefix & 0b0000_0_0_0_1) == 0)
                             </#if>
                             {
+                            <#if !opcode_map_x32[opcode_prefix + opcode_value]??>
+                                if (mode != Mode.ADDR64_DATA32) {
+                                    return Optional.empty();
+                                }
+                            </#if>
+                            <#if !opcode_map_x64[opcode_prefix + opcode_value]??>
+                                if (mode == Mode.ADDR64_DATA32) {
+                                    return Optional.empty();
+                                }
+                            </#if>
                                 <@parse_immediate_and_implicit_aruments ""?left_pad(24) instruction/>
                                 <@select_insruction_by_immediate ""?left_pad(24) opcode_prefix + opcode_value ""/>
                                 return <@make_instruction "" instruction/>;
@@ -1018,19 +1063,34 @@ public interface Instruction {
                             /* fallthrough */
                             </#if>
                         </#if>
-                    <#elseif opcode_map[opcode_prefix + opcode_value + " /r"]?? ||
-                             opcode_map[opcode_prefix + opcode_value + " /m"]??>
+                    <#elseif opcode_map_x32[opcode_prefix + opcode_value + " /r"]?? ||
+                             opcode_map_x64[opcode_prefix + opcode_value + " /r"]?? ||
+                             opcode_map_x32[opcode_prefix + opcode_value + " /m"]?? ||
+                             opcode_map_x64[opcode_prefix + opcode_value + " /m"]??>
                             {
                                 if (!it.hasNext()) {
                                     return Optional.empty();
                                 }
-                        <#if opcode_map[opcode_prefix + opcode_value + " /r"]??>
-                            <#assign instruction = opcode_map[opcode_prefix + opcode_value + " /r"]>
+                        <#if (opcode_map_x32[opcode_prefix + opcode_value + " /r"]?? &&
+                              opcode_map_x64[opcode_prefix + opcode_value + " /r"]?? &&
+                              (opcode_map_x32[opcode_prefix + opcode_value + " /r"].name !=
+                                  opcode_map_x64[opcode_prefix + opcode_value + " /r"].name)) ||
+                             (opcode_map_x32[opcode_prefix + opcode_value + " /m"]?? &&
+                              opcode_map_x64[opcode_prefix + opcode_value + " /m"]?? &&
+                              (opcode_map_x32[opcode_prefix + opcode_value + " /m"].name !=
+                                  opcode_map_x64[opcode_prefix + opcode_value + " /m"].name))>
+                            <#assign x32_x64_difference = true>
+                                if (mode != Mode.ADDR64_DATA32) {
                         <#else>
-                            <#assign instruction = opcode_map[opcode_prefix + opcode_value + " /m"]>
+                            <#assign x32_x64_difference = false>
+                        </#if>
+                        <#if  opcode_map_x32[opcode_prefix + opcode_value + " /r"]??>
+                            <#assign instruction = opcode_map_x32[opcode_prefix + opcode_value + " /r"]>
+                        <#else>
+                            <#assign instruction = opcode_map_x32[opcode_prefix + opcode_value + " /m"]>
                         </#if>
                                 var reg_argument = <@reg_argument instruction "it.peek()" "final_rex_prefix"/>;
-                        <#if opcode_map[opcode_prefix + opcode_value + " /r"]??>
+                        <#if opcode_map_x32[opcode_prefix + opcode_value + " /r"]??>
                                 if ((it.peek() & 0b11_000_000) == 0b11_000_000) {
                                     var rm_argument = <@rm_argument instruction "it.next()" "final_rex_prefix"/>;
                                     <@parse_immediate_and_implicit_aruments ""?left_pad(36) instruction/>
@@ -1039,35 +1099,80 @@ public interface Instruction {
                                     return <@make_instruction "" instruction/>;
                                 }
                         </#if>
-                        <#if opcode_map[opcode_prefix + opcode_value + " /m"]??>
-                            <#if opcode_map[opcode_prefix + opcode_value + " /r"]??>
-                                <#assign instruction = opcode_map[opcode_prefix + opcode_value + " /m"]>
+                        <#if opcode_map_x32[opcode_prefix + opcode_value + " /m"]??>
+                            <#if opcode_map_x32[opcode_prefix + opcode_value + " /r"]??>
+                                <#assign instruction = opcode_map_x32[opcode_prefix + opcode_value + " /m"]>
                                 else {
                             <#else>
                                 if ((it.peek() & 0b11_000_000) != 0b11_000_000) {
                             </#if>
-                                    <@parse_operand_and_return_instruction
-                                        ""?left_pad(28) NativeOperandSize opcode_prefix + opcode_value + " /m" instruction/>
+                            <@parse_operand_and_return_instruction
+                                ""?left_pad(28) native_operand_size opcode_prefix + opcode_value + " /m" instruction/>
                                 }
                         </#if>
+                        <#if x32_x64_difference>
+                                } else {
+                            <#if  opcode_map_x64[opcode_prefix + opcode_value + " /r"]??>
+                                <#assign instruction = opcode_map_x64[opcode_prefix + opcode_value + " /r"]>
+                            <#else>
+                                <#assign instruction = opcode_map_x64[opcode_prefix + opcode_value + " /m"]>
+                            </#if>
+                            <#if opcode_map_x64[opcode_prefix + opcode_value + " /r"]??>
+                                if ((it.peek() & 0b11_000_000) == 0b11_000_000) {
+                                    var rm_argument = <@rm_argument instruction "it.next()" "final_rex_prefix"/>;
+                                    <@parse_immediate_and_implicit_aruments ""?left_pad(36) instruction/>
+                                    <@select_insruction_by_immediate
+                                        ""?left_pad(36) opcode_prefix + opcode_value + "r" ""/>
+                                    return <@make_instruction "" instruction/>;
+                                }
+                            </#if>
+                            <#if opcode_map_x64[opcode_prefix + opcode_value + " /m"]??>
+                                <#if opcode_map_x64[opcode_prefix + opcode_value + " /r"]??>
+                                    <#assign instruction = opcode_map_x64[opcode_prefix + opcode_value + " /m"]>
+                                else {
+                                <#else>
+                                if ((it.peek() & 0b11_000_000) != 0b11_000_000) {
+                                </#if>
+                                    <@parse_operand_and_return_instruction
+                                        ""?left_pad(28) native_operand_size opcode_prefix + opcode_value + " /m" instruction/>
+                                }
+                                }
+                            </#if>
+                        </#if>
                             }
-                    <#elseif prefix_opcode_map[opcode_prefix + opcode_value + " /r"]?? ||
-                             prefix_opcode_map[opcode_prefix + opcode_value + " /m"]??>
+                    <#elseif prefix_opcode_map_x32[opcode_prefix + opcode_value + " /r"]?? ||
+                             prefix_opcode_map_x64[opcode_prefix + opcode_value + " /r"]?? ||
+                             prefix_opcode_map_x32[opcode_prefix + opcode_value + " /m"]?? ||
+                             prefix_opcode_map_x64[opcode_prefix + opcode_value + " /m"]?? >
                             {
                                 if (!it.hasNext()) {
                                     return Optional.empty();
                                 }
                                 byte opcode_extension = (byte)(it.peek() & 0b00_111_000);
-                        <#if prefix_opcode_map[opcode_prefix + opcode_value + " /r"]??>
+                        <#if prefix_opcode_map_x32[opcode_prefix + opcode_value + " /r"]?? ||
+                             prefix_opcode_map_x64[opcode_prefix + opcode_value + " /r"]??>
                                 if ((it.peek() & 0b11_000_000) == 0b11_000_000) {
                                     switch (opcode_extension) {
                             <#list ["0:000", "1:001", "2:010", "3:011", "4:100", "5:101", "6:110", "7:111"]
-                            as opcode_extension>
+                                   as opcode_extension>
                                 <#assign full_opcode = opcode_prefix + opcode_value + " /r /" + opcode_extension?keep_before(":")>
-                                <#if  opcode_map[full_opcode]??>
-                                    <#assign instruction = opcode_map[full_opcode]>
+                                <#if opcode_map_x32[full_opcode]?? || opcode_map_x64[full_opcode]??>
                                         case 0b00_${opcode_extension?keep_after(":")}_000 :
                                             {
+                                    <#if !opcode_map_x64[full_opcode]??>
+                                                if (mode == Mode.ADDR64_DATA32) {
+                                                    return Optional.empty();
+                                                }
+                                    <#else>
+                                        <#assign instruction = opcode_map_x64[full_opcode]>
+                                    </#if>
+                                    <#if !opcode_map_x32[full_opcode]??>
+                                                if (mode != Mode.ADDR64_DATA32) {
+                                                    return Optional.empty();
+                                                }
+                                    <#else>
+                                        <#assign instruction = opcode_map_x32[full_opcode]>
+                                    </#if>
                                                 var rm_argument = <@rm_argument instruction "it.next()" "final_rex_prefix"/>;
                                                 <@parse_immediate_and_implicit_aruments ""?left_pad(40) instruction/>
                                                 <@select_insruction_by_immediate ""?left_pad(48) full_opcode ""/>
@@ -1080,8 +1185,10 @@ public interface Instruction {
                                     }
                                 }
                         </#if>
-                        <#if prefix_opcode_map[opcode_prefix + opcode_value + " /m"]??>
-                            <#if prefix_opcode_map[opcode_prefix + opcode_value + " /r"]??>
+                        <#if prefix_opcode_map_x32[opcode_prefix + opcode_value + " /m"]?? ||
+                             prefix_opcode_map_x64[opcode_prefix + opcode_value + " /m"]??>
+                            <#if prefix_opcode_map_x32[opcode_prefix + opcode_value + " /r"]?? ||
+                                 prefix_opcode_map_x64[opcode_prefix + opcode_value + " /r"]??>
                                 else {
                             <#else>
                                 if ((it.peek() & 0b11_000_000) != 0b11_000_000) {
@@ -1090,14 +1197,27 @@ public interface Instruction {
                             <#list ["0:000", "1:001", "2:010", "3:011", "4:100", "5:101", "6:110", "7:111"]
                                    as opcode_extension>
                                 <#assign full_opcode = opcode_prefix + opcode_value + " /m /" + opcode_extension?keep_before(":")>
-                                    <#if  opcode_map[full_opcode]??>
-                                        <#assign instruction = opcode_map[full_opcode]>
-                                        case 0b00_${opcode_extension?keep_after(":")}_000:
+                                <#if opcode_map_x32[full_opcode]?? || opcode_map_x64[full_opcode]??>
+                                        case 0b00_${opcode_extension?keep_after(":")}_000 :
                                             {
+                                    <#if !opcode_map_x64[full_opcode]??>
+                                                if (mode == Mode.ADDR64_DATA32) {
+                                                    return Optional.empty();
+                                                }
+                                    <#else>
+                                        <#assign instruction = opcode_map_x64[full_opcode]>
+                                    </#if>
+                                    <#if !opcode_map_x32[full_opcode]??>
+                                                if (mode != Mode.ADDR64_DATA32) {
+                                                    return Optional.empty();
+                                                }
+                                    <#else>
+                                        <#assign instruction = opcode_map_x32[full_opcode]>
+                                    </#if>
                                                 <@parse_operand_and_return_instruction
-                                                    ""?left_pad(40) NativeOperandSize full_opcode instruction/>
+                                                    ""?left_pad(40) native_operand_size full_opcode instruction/>
                                             }
-                                        </#if>
+                                </#if>
                             </#list>
                                         default:
                                             return Optional.empty();

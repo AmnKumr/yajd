@@ -26,6 +26,8 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 public class InstructionTest {
@@ -497,12 +499,44 @@ public class InstructionTest {
                 arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x46, (byte) 0x90}, "Nop"),
                 arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{(byte) 0xd5, 0x0a}, "Aad"),
                 arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{(byte) 0xd4, 0x0a}, "Aam"),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{(byte) 0xd4, 0x00}, null),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{(byte) 0xd4, 0x0a}, null),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{(byte) 0xd5, 0x00}, null),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{(byte) 0xd5, 0x0a}, null),
                 arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x66, (byte) 0xd5, 0x0a}, "Aad"),
                 arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x66, (byte) 0xd4, 0x0a}, "Aam"),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x66, (byte) 0xd5, 0x00}, null),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x66, (byte) 0xd5, 0x0a}, null),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x66, (byte) 0xd4, 0x00}, null),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x66, (byte) 0xd4, 0x0a}, null),
                 arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{(byte) 0xf2, (byte) 0xd5, 0x0a}, "Aad"),
                 arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{(byte) 0xf2, (byte) 0xd4, 0x0a}, "Aam"),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{(byte) 0xf2, (byte) 0xd5, 0x00}, null),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{(byte) 0xf2, (byte) 0xd5, 0x0a}, null),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{(byte) 0xf2, (byte) 0xd4, 0x00}, null),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{(byte) 0xf2, (byte) 0xd4, 0x0a}, null),
                 arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{(byte) 0xf3, (byte) 0xd5, 0x0a}, "Aad"),
-                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{(byte) 0xf3, (byte) 0xd4, 0x0a}, "Aam"));
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{(byte) 0xf3, (byte) 0xd4, 0x0a}, "Aam"),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{(byte) 0xf3, (byte) 0xd5, 0x00}, null),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{(byte) 0xf3, (byte) 0xd5, 0x0a}, null),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{(byte) 0xf3, (byte) 0xd4, 0x00}, null),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{(byte) 0xf3, (byte) 0xd4, 0x0a}, null),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x40, 0x40}, null),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x40, 0x41}, null),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x40, 0x42}, null),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x40, 0x43}, null),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x40, 0x44}, null),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x40, 0x45}, null),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x40, 0x46}, null),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x40, 0x47}, null),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x40, 0x48}, null),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x40, 0x49}, null),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x40, 0x4a}, null),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x40, 0x4b}, null),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x40, 0x4c}, null),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x40, 0x4d}, null),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x40, 0x4e}, null),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x40, 0x4f}, null));
     }
 
     @ParameterizedTest
@@ -799,11 +833,16 @@ public class InstructionTest {
     void testParseZeroOperandInstructions(@NotNull Instruction.Mode mode, Byte[] opcodes, String name) {
         Optional<Instruction> instruction =
                 Instruction.parse(mode, new RollbackIterator<>(Arrays.asList(opcodes).iterator()));
-        assertEquals(
-                "org.yajd.x86.cpu.Instruction$" + name,
-                instruction.get().getClass().getName());
-        var arguments = instruction.get().getArguments();
-        assertEquals(0, arguments.length);
+        if (name != null) {
+            assertTrue(instruction.isPresent());
+            assertEquals(
+                    "org.yajd.x86.cpu.Instruction$" + name,
+                    instruction.get().getClass().getName());
+            var arguments = instruction.get().getArguments();
+            assertEquals(0, arguments.length);
+        } else {
+            assertFalse(instruction.isPresent());
+        }
     }
 
 }
