@@ -337,13 +337,21 @@
                             <#list suffixes as suffix>
                                 "${opcode[0..<(opcode?length-1)]}${suffix}" : {
                                     "name" : "${classname(instruction_name, instruction_class.arguments)}",
+                                <#if instruction_class.arguments?size == 0>
+                                    "arguments" : []
+                                <#else>
                                     "arguments" : ["${instruction_class.arguments?join("\", \"")}"]
+                                </#if>
                                 },
                             </#list>
                         <#else>
                             "${opcode}" : {
                                 "name" : "${classname(instruction_name, instruction_class.arguments)}",
+                            <#if instruction_class.arguments?size == 0>
+                                "arguments" : []
+                            <#else>
                                 "arguments" : ["${instruction_class.arguments?join("\", \"")}"]
+                            </#if>
                             },
                         </#if>
                     </#list>
@@ -417,27 +425,26 @@
     "e0", "e1", "e2", "e3", "e4", "e5", "e6", "e7", "e8", "e9", "ea", "eb", "ec", "ed", "ee", "ef",
     "f0", "f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8", "f9", "fa", "fb", "fc", "fd", "fe", "ff"
 ]>
-<#function value_to_byte value>
-    <#-- Note: freemarker doesn't have a lexicogrphical comparison for strings… use hash instead… -->
-    <#return {
-        '0':"0x",
-        '1':"0x",
-        '2':"0x",
-        '3':"0x",
-        '4':"0x",
-        '5':"0x",
-        '6':"0x",
-        '7':"0x",
-        '8':"(byte)0x",
-        '9':"(byte)0x",
-        'a':"(byte)0x",
-        'b':"(byte)0x",
-        'c':"(byte)0x",
-        'd':"(byte)0x",
-        'e':"(byte)0x",
-        'f':"(byte)0x"
-    }[value[0]] + value>
-</#function>
+<#macro value_to_byte value>
+<#-- Note: freemarker doesn't have a lexicogrphical comparison for strings… use hash instead… -->${{
+    '0':"0x",
+    '1':"0x",
+    '2':"0x",
+    '3':"0x",
+    '4':"0x",
+    '5':"0x",
+    '6':"0x",
+    '7':"0x",
+    '8':"(byte)0x",
+    '9':"(byte)0x",
+    'a':"(byte)0x",
+    'b':"(byte)0x",
+    'c':"(byte)0x",
+    'd':"(byte)0x",
+    'e':"(byte)0x",
+    'f':"(byte)0x"
+    }[value[0]] + value}</#macro
+>
 <#function argument_in_opcode instruction>
     <#list instruction.arguments as argument>
         <#if argument?starts_with("Op:")>
@@ -517,34 +524,6 @@
         >
     </#list>
 </#macro>
-<#macro make_instruction_with_name instruction_name instruction>
-Optional.of(new ${instruction_name}(<#list instruction.arguments as argument
-    >${{"AX": "implicit_argument_ax",
-        "Imm0": "immediate_argument0.get()",
-        "Imm1": "immediate_argument1.get()",
-        "Op": "opcode_argument",
-        "Reg": "reg_argument",
-        "Rm" : "rm_argument"}[argument?keep_before(":")]}, </#list
-    >toPrimitive(deque.toArray(empty_byte_array))))</#macro
->
-<#macro make_instruction instruction>
-<@make_instruction_with_name instruction.name instruction/>
-</#macro>
-<#macro make_instruction_addr16 instruction>
-    <@make_instruction_with_name instruction.name?replace("Addr32", "Addr16")?replace("Addr64", "Addr16") instruction/>
-</#macro>
-<#macro make_instruction_addr32 instruction>
-    <@make_instruction_with_name instruction.name?replace("Addr16", "Addr32")?replace("Addr64", "Addr32") instruction/>
-</#macro>
-<#macro make_instruction_eip_addr32 instruction>
-    <@make_instruction_with_name instruction.name?replace("Addr32", "EIPAddr32")?replace("Addr16", "EIPAddr32")?replace("Addr64", "EIPAddr32") instruction/>
-</#macro>
-<#macro make_instruction_addr64 instruction>
-    <@make_instruction_with_name instruction.name?replace("Addr16", "Addr64")?replace("Addr32", "Addr64") instruction/>
-</#macro>
-<#macro make_instruction_rip_addr64 instruction>
-    <@make_instruction_with_name instruction.name?replace("Addr64", "RIPAddr64")?replace("Addr16", "RIPAddr64")?replace("Addr32", "RIPAddr64") instruction/>
-</#macro>
 <#macro parse_immediate_and_implicit_aruments indent instruction>
     <#if has_implicit_argument("AX:", instruction)>
         ${indent}var implicit_argument_ax = <@implicit_argument "AX:" instruction/>;
@@ -562,7 +541,62 @@ Optional.of(new ${instruction_name}(<#list instruction.arguments as argument
         </#if>
     </#if>
 </#macro>
-<#macro parse_operand_and_return_instruction indent native_operand_size instruction>
+<#macro make_instruction_with_name instruction_name instruction>
+Optional.of(new ${instruction_name}(<#list instruction.arguments as argument
+>${{"AX": "implicit_argument_ax",
+    "Imm0": "immediate_argument0.get()",
+    "Imm1": "immediate_argument1.get()",
+    "Op": "opcode_argument",
+    "Reg": "reg_argument",
+    "Rm" : "rm_argument"}[argument?keep_before(":")]}, </#list
+>toPrimitive(deque.toArray(empty_byte_array))))</#macro
+>
+<#macro make_instruction target_addr instruction>
+    <#if target_addr == "">
+        <@make_instruction_with_name instruction.name instruction/>
+    <#else>
+        <@make_instruction_with_name
+            instruction.name
+                ?replace("Addr16", "𝓐𝓭𝓭𝓻")
+                ?replace("Addr32", "𝓐𝓭𝓭𝓻")
+                ?replace("Addr32", "𝓐𝓭𝓭𝓻")
+                ?replace("Addr64", "𝓐𝓭𝓭𝓻")
+                ?replace("𝓐𝓭𝓭𝓻", target_addr)
+            instruction/>
+    </#if>
+</#macro>
+<#macro select_insruction_by_immediate indent opcode target_addr>
+    <#-- We only have refined instructions if opcode is both bpcode for instructions and prefix for refixned one -->
+    <#if prefix_opcode_map[opcode]??>
+        <#local refined_instructions = 0>
+        <#list byte_vaues as opcode_value>
+            <#if opcode_map[opcode + " +0x" + opcode_value]??>
+                <#local refined_instructions = refined_instructions + 1>
+            </#if>
+        </#list>
+        <#if 1 == refined_instructions>
+            <#list byte_vaues as opcode_value>
+                <#if opcode_map[opcode + " +0x" + opcode_value]??>
+                    <#local refined_instructions = refined_instructions + 1>
+        ${indent}if (immediate_argument0.get() == <@value_to_byte opcode_value/>) {
+        ${indent}    return <@make_instruction target_addr opcode_map[opcode + " +0x" + opcode_value]/>;
+        ${indent}}
+                </#if>
+            </#list>
+        <#elseif 1 < refined_instructions>
+        ${indent}switch (immediate_argument0.get()) {
+            <#list byte_vaues as opcode_value>
+                <#if opcode_map[opcode + " +0x" + opcode_value]??>
+                    <#local refined_instructions = refined_instructions + 1>
+        ${indent}    case <@value_to_byte opcode_value/>:
+        ${indent}        return <@make_instruction target_addr opcode_map[opcode + " +0x" + opcode_value]/>;
+                </#if>
+            </#list>
+        ${indent}}
+        </#if>
+    </#if>
+</#macro>
+<#macro parse_operand_and_return_instruction indent native_operand_size opcode instruction>
     <#if native_operand_size == 16>
         ${indent}if (final_x67_prefix) {
         ${indent}    var parse_result = parseGPAddress32(final_segment, final_rex_prefix, it);
@@ -571,7 +605,8 @@ Optional.of(new ${instruction_name}(<#list instruction.arguments as argument
         ${indent}    }
         ${indent}    var rm_argument = parse_result.get();
             <@parse_immediate_and_implicit_aruments indent+"    " instruction/>
-        ${indent}    return <@make_instruction_addr32 instruction/>;
+            <@select_insruction_by_immediate indent+"    " opcode "Addr32"/>
+        ${indent}    return <@make_instruction "Addr32" instruction/>;
         ${indent}} else {
         ${indent}    var parse_result = parseGPAddress16(final_segment, it);
         ${indent}    if (parse_result.isEmpty()) {
@@ -579,7 +614,8 @@ Optional.of(new ${instruction_name}(<#list instruction.arguments as argument
         ${indent}    }
         ${indent}    var rm_argument = parse_result.get();
             <@parse_immediate_and_implicit_aruments indent+"    " instruction/>
-        ${indent}    return <@make_instruction_addr16 instruction/>;
+            <@select_insruction_by_immediate indent+"    " opcode "Addr16"/>
+        ${indent}    return <@make_instruction "Addr16" instruction/>;
         ${indent}}
     <#elseif native_operand_size == 32>
         ${indent}if (final_x67_prefix && (mode != Mode.ADDR64_DATA32)) {
@@ -589,7 +625,8 @@ Optional.of(new ${instruction_name}(<#list instruction.arguments as argument
         ${indent}    }
         ${indent}    var rm_argument = parse_result.get();
             <@parse_immediate_and_implicit_aruments indent+"    " instruction/>
-        ${indent}    return <@make_instruction_addr16 instruction/>;
+            <@select_insruction_by_immediate indent+"    " opcode "Addr16"/>
+        ${indent}    return <@make_instruction "Addr16" instruction/>;
         ${indent}} else if (final_x67_prefix ^ (mode != Mode.ADDR64_DATA32)) {
         ${indent}    if (mode == Mode.ADDR64_DATA32) {
         ${indent}        if ((it.peek() & 0b11_000_111) == 0b00_000_101) {
@@ -600,7 +637,8 @@ Optional.of(new ${instruction_name}(<#list instruction.arguments as argument
         ${indent}            }
         ${indent}            var rm_argument = new EIPAddress32(final_segment, parse_result.get());
                     <@parse_immediate_and_implicit_aruments indent+"            " instruction/>
-        ${indent}            return <@make_instruction_eip_addr32 instruction/>;
+                    <@select_insruction_by_immediate indent+"            " opcode "EIPAddr32"/>
+        ${indent}            return <@make_instruction "EIPAddr32" instruction/>;
         ${indent}        }
         ${indent}    }
         ${indent}    var parse_result = parseGPAddress32(final_segment, final_rex_prefix, it);
@@ -609,7 +647,8 @@ Optional.of(new ${instruction_name}(<#list instruction.arguments as argument
         ${indent}    }
         ${indent}    var rm_argument = parse_result.get();
             <@parse_immediate_and_implicit_aruments indent+"    " instruction/>
-        ${indent}    return <@make_instruction_addr32 instruction/>;
+            <@select_insruction_by_immediate indent+"    " opcode "Addr32"/>
+        ${indent}    return <@make_instruction "Addr32" instruction/>;
         ${indent}} else {
         ${indent}    if ((it.peek() & 0b11_000_111) == 0b00_000_101) {
         ${indent}        it.next();
@@ -619,7 +658,8 @@ Optional.of(new ${instruction_name}(<#list instruction.arguments as argument
         ${indent}        }
         ${indent}        var rm_argument = new RIPAddress64(final_segment, parse_result.get());
                 <@parse_immediate_and_implicit_aruments indent+"        " instruction/>
-        ${indent}        return <@make_instruction_rip_addr64 instruction/>;
+                <@select_insruction_by_immediate indent+"        " opcode "RIPAddr64"/>
+        ${indent}        return <@make_instruction "RIPAddr64" instruction/>;
         ${indent}    }
         ${indent}    var parse_result = parseGPAddress64(final_segment, final_rex_prefix, it);
         ${indent}    if (parse_result.isEmpty()) {
@@ -627,7 +667,8 @@ Optional.of(new ${instruction_name}(<#list instruction.arguments as argument
         ${indent}    }
         ${indent}    var rm_argument = parse_result.get();
             <@parse_immediate_and_implicit_aruments indent+"    " instruction/>
-        ${indent}    return <@make_instruction_addr64 instruction/>;
+            <@select_insruction_by_immediate indent+"    " opcode "Addr64"/>
+        ${indent}    return <@make_instruction "Addr64" instruction/>;
         ${indent}}
      <#else><#-- native_operand_size == 64 -->
         ${indent}if (final_x67_prefix) {
@@ -639,7 +680,8 @@ Optional.of(new ${instruction_name}(<#list instruction.arguments as argument
         ${indent}        }
         ${indent}        var rm_argument = new EIPAddress32(final_segment, parse_result.get());
                 <@parse_immediate_and_implicit_aruments indent+"        " instruction/>
-        ${indent}        return <@make_instruction_eip_addr32 instruction/>;
+                <@select_insruction_by_immediate indent+"        " opcode "EIPAddr32"/>
+        ${indent}        return <@make_instruction "EIPAddr32" instruction/>;
         ${indent}    }
         ${indent}    var parse_result = parseGPAddress32(final_segment, final_rex_prefix, it);
         ${indent}    if (parse_result.isEmpty()) {
@@ -647,7 +689,8 @@ Optional.of(new ${instruction_name}(<#list instruction.arguments as argument
         ${indent}    }
         ${indent}    var rm_argument = parse_result.get();
             <@parse_immediate_and_implicit_aruments indent+"    " instruction/>
-        ${indent}    return <@make_instruction_addr32 instruction/>;
+            <@select_insruction_by_immediate indent+"    " opcode "Addr32"/>
+        ${indent}    return <@make_instruction "Addr32" instruction/>;
         ${indent}} else {
         ${indent}    if ((it.peek() & 0b11_000_111) == 0b00_000_101) {
         ${indent}        it.next();
@@ -657,7 +700,8 @@ Optional.of(new ${instruction_name}(<#list instruction.arguments as argument
         ${indent}        }
         ${indent}        var rm_argument = new RIPAddress64(final_segment, parse_result.get());
                 <@parse_immediate_and_implicit_aruments indent+"        " instruction/>
-        ${indent}        return <@make_instruction_rip_addr64 instruction/>;
+                <@select_insruction_by_immediate indent+"        " opcode "RIPAddr64"/>
+        ${indent}        return <@make_instruction "RIPAddr64" instruction/>;
         ${indent}    }
         ${indent}    var parse_result = parseGPAddress64(final_segment, final_rex_prefix, it);
         ${indent}    if (parse_result.isEmpty()) {
@@ -665,7 +709,8 @@ Optional.of(new ${instruction_name}(<#list instruction.arguments as argument
         ${indent}    }
         ${indent}    var rm_argument = parse_result.get();
             <@parse_immediate_and_implicit_aruments indent+"    " instruction/>
-        ${indent}    return <@make_instruction_addr64 instruction/>;
+            <@select_insruction_by_immediate indent+"    " opcode "Addr64"/>
+        ${indent}    return <@make_instruction "Addr64" instruction/>;
         ${indent}}
     </#if>
 </#macro>
@@ -940,7 +985,7 @@ public interface Instruction {
             <#list byte_vaues?filter(x -> !element_in_list(x, ["66", "f2", "f3"])) as opcode_value>
                 <#if opcode_map[opcode_prefix + opcode_value]?? ||
                      prefix_opcode_map[opcode_prefix + opcode_value]??>
-                        case ${value_to_byte(opcode_value)}:
+                        case <@value_to_byte opcode_value/>:
                     <#-- Handle register operant in opcode -->
                     <#if opcode_map[opcode_prefix + opcode_value]??>
                         <#assign instruction = opcode_map[opcode_prefix + opcode_value]>
@@ -951,7 +996,7 @@ public interface Instruction {
                                 var opcode_argument = <@argument_from_opcode
                                    instruction "opcode" "final_rex_prefix"/>;
                                 <@parse_immediate_and_implicit_aruments ""?left_pad(24) instruction/>
-                                return <@make_instruction instruction/>;
+                                return <@make_instruction "" instruction/>;
                             }
                             <#else>
                             /* fallthrough */
@@ -965,7 +1010,8 @@ public interface Instruction {
                             </#if>
                             {
                                 <@parse_immediate_and_implicit_aruments ""?left_pad(24) instruction/>
-                                return <@make_instruction instruction/>;
+                                <@select_insruction_by_immediate ""?left_pad(24) opcode_prefix + opcode_value ""/>
+                                return <@make_instruction "" instruction/>;
                             }
                             <#if element_in_list(opcode_prefix + opcode_value,
                                 ["0x90", "0x66 0x90", "0xf2 0x90", "0xf3 0x90", "0x66 0xf2 0x90", "0x66 0xf3 0x90"])>
@@ -988,7 +1034,9 @@ public interface Instruction {
                                 if ((it.peek() & 0b11_000_000) == 0b11_000_000) {
                                     var rm_argument = <@rm_argument instruction "it.next()" "final_rex_prefix"/>;
                                     <@parse_immediate_and_implicit_aruments ""?left_pad(36) instruction/>
-                                    return <@make_instruction instruction/>;
+                                    <@select_insruction_by_immediate
+                                        ""?left_pad(36) opcode_prefix + opcode_value + "r" ""/>
+                                    return <@make_instruction "" instruction/>;
                                 }
                         </#if>
                         <#if opcode_map[opcode_prefix + opcode_value + " /m"]??>
@@ -998,7 +1046,8 @@ public interface Instruction {
                             <#else>
                                 if ((it.peek() & 0b11_000_000) != 0b11_000_000) {
                             </#if>
-                                    <@parse_operand_and_return_instruction ""?left_pad(28) NativeOperandSize instruction/>
+                                    <@parse_operand_and_return_instruction
+                                        ""?left_pad(28) NativeOperandSize opcode_prefix + opcode_value + " /m" instruction/>
                                 }
                         </#if>
                             }
@@ -1021,7 +1070,8 @@ public interface Instruction {
                                             {
                                                 var rm_argument = <@rm_argument instruction "it.next()" "final_rex_prefix"/>;
                                                 <@parse_immediate_and_implicit_aruments ""?left_pad(40) instruction/>
-                                                return <@make_instruction instruction/>;
+                                                <@select_insruction_by_immediate ""?left_pad(48) full_opcode ""/>
+                                                return <@make_instruction "" instruction/>;
                                             }
                                 </#if>
                             </#list>
@@ -1044,7 +1094,8 @@ public interface Instruction {
                                         <#assign instruction = opcode_map[full_opcode]>
                                         case 0b00_${opcode_extension?keep_after(":")}_000:
                                             {
-                                                <@parse_operand_and_return_instruction ""?left_pad(40) NativeOperandSize instruction/>
+                                                <@parse_operand_and_return_instruction
+                                                    ""?left_pad(40) NativeOperandSize full_opcode instruction/>
                                             }
                                         </#if>
                             </#list>
@@ -1292,13 +1343,13 @@ public interface Instruction {
             return Optional.empty();
         }
         byte high_byte = it.next();
-        return Optional.of((long)(((long)high_byte << 56L) |
-                                  ((long)seventh_byte << 48L) |
-                                  ((long)sixth_byte << 40L) |
-                                  ((long)fifth_byte << 32L) |
-                                  (fourth_byte << 24) |
-                                  (third_byte << 16) |
-                                  (second_byte << 8) |
-                                  low_byte));
+        return Optional.of((((long)high_byte << 56L) |
+                            ((long)seventh_byte << 48L) |
+                            ((long)sixth_byte << 40L) |
+                            ((long)fifth_byte << 32L) |
+                            (fourth_byte << 24) |
+                            (third_byte << 16) |
+                            (second_byte << 8) |
+                            low_byte));
     }
 }

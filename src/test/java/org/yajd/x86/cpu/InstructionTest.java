@@ -281,24 +281,6 @@ public class InstructionTest {
                 arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x49, (byte)0xff, (byte)0xc7}, "IncReg64", GPRegister64.R15));
     }
 
-    static @NotNull Stream<Arguments> nopEncodings() {
-        return Stream.of(
-                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{(byte) 0x90}, "Nop"),
-                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{(byte) 0x90}, "Nop"),
-                arguments(Instruction.Mode.ADDR32_DATA16, new Byte[]{(byte) 0x90}, "Nop"),
-                arguments(Instruction.Mode.ADDR32_DATA32, new Byte[]{(byte) 0x90}, "Nop"),
-                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{(byte) 0x90}, "Nop"),
-                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x66, (byte) 0x90}, "Nop"),
-                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x66, (byte) 0x90}, "Nop"),
-                arguments(Instruction.Mode.ADDR32_DATA16, new Byte[]{0x66, (byte) 0x90}, "Nop"),
-                arguments(Instruction.Mode.ADDR32_DATA32, new Byte[]{0x66, (byte) 0x90}, "Nop"),
-                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x66, (byte) 0x90}, "Nop"),
-                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x40, (byte) 0x90}, "Nop"),
-                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x42, (byte) 0x90}, "Nop"),
-                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x44, (byte) 0x90}, "Nop"),
-                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x46, (byte) 0x90}, "Nop"));
-    }
-
     static @NotNull Stream<Arguments> twoArgumentImmediateEncoding() {
         return Stream.of(
                 arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{(byte) 0xb0, 0x01}, "MovReg8Imm8", GPRegister8.AL, (byte) 1),
@@ -487,6 +469,42 @@ public class InstructionTest {
                 arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x49, (byte) 0x97}, "XchgReg64Reg64", GPRegister64.RAX, GPRegister64.R15));
     }
 
+    static @NotNull Stream<Arguments> zeroOperandEncodings() {
+        return Stream.of(
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{(byte) 0x90}, "Nop"),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{(byte) 0x90}, "Nop"),
+                arguments(Instruction.Mode.ADDR32_DATA16, new Byte[]{(byte) 0x90}, "Nop"),
+                arguments(Instruction.Mode.ADDR32_DATA32, new Byte[]{(byte) 0x90}, "Nop"),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{(byte) 0x90}, "Nop"),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x66, (byte) 0x90}, "Nop"),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x66, (byte) 0x90}, "Nop"),
+                arguments(Instruction.Mode.ADDR32_DATA16, new Byte[]{0x66, (byte) 0x90}, "Nop"),
+                arguments(Instruction.Mode.ADDR32_DATA32, new Byte[]{0x66, (byte) 0x90}, "Nop"),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x66, (byte) 0x90}, "Nop"),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{(byte) 0xf2, (byte) 0x90}, "Nop"),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{(byte) 0xf2, (byte) 0x90}, "Nop"),
+                arguments(Instruction.Mode.ADDR32_DATA16, new Byte[]{(byte) 0xf2, (byte) 0x90}, "Nop"),
+                arguments(Instruction.Mode.ADDR32_DATA32, new Byte[]{(byte) 0xf2, (byte) 0x90}, "Nop"),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{(byte) 0xf2, (byte) 0x90}, "Nop"),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{(byte) 0xf3, (byte) 0x90}, "Pause"),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{(byte) 0xf3, (byte) 0x90}, "Pause"),
+                arguments(Instruction.Mode.ADDR32_DATA16, new Byte[]{(byte) 0xf3, (byte) 0x90}, "Pause"),
+                arguments(Instruction.Mode.ADDR32_DATA32, new Byte[]{(byte) 0xf3, (byte) 0x90}, "Pause"),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{(byte) 0xf3, (byte) 0x90}, "Pause"),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x40, (byte) 0x90}, "Nop"),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x42, (byte) 0x90}, "Nop"),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x44, (byte) 0x90}, "Nop"),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x46, (byte) 0x90}, "Nop"),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{(byte) 0xd5, 0x0a}, "Aad"),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{(byte) 0xd4, 0x0a}, "Aam"),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x66, (byte) 0xd5, 0x0a}, "Aad"),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x66, (byte) 0xd4, 0x0a}, "Aam"),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{(byte) 0xf2, (byte) 0xd5, 0x0a}, "Aad"),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{(byte) 0xf2, (byte) 0xd4, 0x0a}, "Aam"),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{(byte) 0xf3, (byte) 0xd5, 0x0a}, "Aad"),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{(byte) 0xf3, (byte) 0xd4, 0x0a}, "Aam"));
+    }
+
     @ParameterizedTest
     @MethodSource("decIncRegisterEncodings")
     @DisplayName("Dec/Inc registers parse test")
@@ -571,19 +589,6 @@ public class InstructionTest {
         }
         assertEquals(disp, address.getClass().getMethod("getDisp").invoke(address));
         assertEquals(size, address.getClass().getMethod("getSize").invoke(address));
-    }
-
-    @ParameterizedTest
-    @MethodSource("nopEncodings")
-    @DisplayName("Nop parse test")
-    void testParseNop(@NotNull Instruction.Mode mode, Byte[] opcodes, String name) {
-        Optional<Instruction> instruction =
-                Instruction.parse(mode, new RollbackIterator<>(Arrays.asList(opcodes).iterator()));
-        assertEquals(
-                "org.yajd.x86.cpu.Instruction$" + name,
-                instruction.get().getClass().getName());
-        var arguments = instruction.get().getArguments();
-        assertEquals(0, arguments.length);
     }
 
     @ParameterizedTest
@@ -787,4 +792,18 @@ public class InstructionTest {
         assertEquals(register1, arguments[0].process(GetResult));
         assertEquals(register2, arguments[1].process(GetResult));
     }
+
+    @ParameterizedTest
+    @MethodSource("zeroOperandEncodings")
+    @DisplayName("Zero-Operand Instructions Test")
+    void testParseZeroOperandInstructions(@NotNull Instruction.Mode mode, Byte[] opcodes, String name) {
+        Optional<Instruction> instruction =
+                Instruction.parse(mode, new RollbackIterator<>(Arrays.asList(opcodes).iterator()));
+        assertEquals(
+                "org.yajd.x86.cpu.Instruction$" + name,
+                instruction.get().getClass().getName());
+        var arguments = instruction.get().getArguments();
+        assertEquals(0, arguments.length);
+    }
+
 }
