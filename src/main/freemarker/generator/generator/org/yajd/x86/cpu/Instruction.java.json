@@ -13,76 +13,203 @@
  */
 
 {
-  "templateName": "Instruction.java.ftl",
-  "dataModel": {
+  "templateName" : "Instruction.java.ftl",
+  "dataModel" : {
     "argument_to_class_name" : {
-      "Imm8": "Imm8",
-      "Imm16": "Imm16",
-      "Imm32": "Imm32",
-      "Imm64": "Imm64",
-      "GPRegister8": "Reg8",
-      "GPRegister16": "Reg16",
-      "GPRegister32": "Reg32",
-      "GPRegister64": "Reg64",
-      "GPAddress16/8": "Addr16Mem8",
-      "GPAddress16/16": "Addr16Mem16",
-      "GPAddress16/32": "Addr16Mem32",
-      "GPAddress16/64": "Addr16Mem64",
-      "GPAddress32/8": "Addr32Mem8",
-      "GPAddress32/16": "Addr32Mem16",
-      "GPAddress32/32": "Addr32Mem32",
-      "GPAddress32/64": "Addr32Mem64",
-      "EIPAddress32/8": "EIPAddr32Mem8",
-      "EIPAddress32/16": "EIPAddr32Mem16",
-      "EIPAddress32/32": "EIPAddr32Mem32",
-      "EIPAddress32/64": "EIPAddr32Mem64",
-      "GPAddress64/8": "Addr64Mem8",
-      "GPAddress64/16": "Addr64Mem16",
-      "GPAddress64/32": "Addr64Mem32",
-      "GPAddress64/64": "Addr64Mem64",
-      "RIPAddress64/8": "RIPAddr64Mem8",
-      "RIPAddress64/16": "RIPAddr64Mem16",
-      "RIPAddress64/32": "RIPAddr64Mem32",
-      "RIPAddress64/64": "RIPAddr64Mem64"
+      "Imm8" : "Imm8",
+      "Imm16" : "Imm16",
+      "Imm32" : "Imm32",
+      "Imm64" : "Imm64",
+      "GPRegister8" : "Reg8",
+      "GPRegister16" : "Reg16",
+      "GPRegister32" : "Reg32",
+      "GPRegister64" : "Reg64",
+      "SegmentRegister" : "SegReg",
+      "GPAddress16/0" : "Addr16",
+      "GPAddress16/8" : "Addr16Mem8",
+      "GPAddress16/16" : "Addr16Mem16",
+      "GPAddress16/32" : "Addr16Mem32",
+      "GPAddress16/64" : "Addr16Mem64",
+      "GPAddress32/0" : "Addr32",
+      "GPAddress32/8" : "Addr32Mem8",
+      "GPAddress32/16" : "Addr32Mem16",
+      "GPAddress32/32" : "Addr32Mem32",
+      "GPAddress32/64" : "Addr32Mem64",
+      "EIPAddress32/0" : "EIPAddr32",
+      "EIPAddress32/8" : "EIPAddr32Mem8",
+      "EIPAddress32/16" : "EIPAddr32Mem16",
+      "EIPAddress32/32" : "EIPAddr32Mem32",
+      "EIPAddress32/64" : "EIPAddr32Mem64",
+      "GPAddress64/0" : "Addr64",
+      "GPAddress64/8" : "Addr64Mem8",
+      "GPAddress64/16" : "Addr64Mem16",
+      "GPAddress64/32" : "Addr64Mem32",
+      "GPAddress64/64" : "Addr64Mem64",
+      "RIPAddress64/0" : "RIPAddr64",
+      "RIPAddress64/8" : "RIPAddr64Mem8",
+      "RIPAddress64/16" : "RIPAddr64Mem16",
+      "RIPAddress64/32" : "RIPAddr64Mem32",
+      "RIPAddress64/64" : "RIPAddr64Mem64",
+      "AbsoluteAddress64/0" : "AbsAddr64",
+      "AbsoluteAddress64/8" : "AbsAddr64Mem8",
+      "AbsoluteAddress64/16" : "AbsAddr64Mem16",
+      "AbsoluteAddress64/32" : "AbsAddr64Mem32",
+      "AbsoluteAddress64/64" : "AbsAddr64Mem64"
     },
-    "argumeng_name_to_type_name": {
-      "Imm8": "byte",
-      "Imm16": "short",
-      "Imm32": "int",
-      "Imm64": "long",
-      "GPRegister8": "GPRegister8",
-      "GPRegister16": "GPRegister16",
-      "GPRegister32": "GPRegister32",
-      "GPRegister64": "GPRegister64",
-      "GPAddress16/8": "GPAddress16",
-      "GPAddress16/16": "GPAddress16",
-      "GPAddress16/32": "GPAddress16",
-      "GPAddress16/64": "GPAddress16",
-      "GPAddress32/8": "GPAddress32",
-      "GPAddress32/16": "GPAddress32",
-      "GPAddress32/32": "GPAddress32",
-      "GPAddress32/64": "GPAddress32",
-      "EIPAddress32/8": "EIPAddress32",
-      "EIPAddress32/16": "EIPAddress32",
-      "EIPAddress32/32": "EIPAddress32",
-      "EIPAddress32/64": "EIPAddress32",
-      "GPAddress64/8": "GPAddress64",
-      "GPAddress64/16": "GPAddress64",
-      "GPAddress64/32": "GPAddress64",
-      "GPAddress64/64": "GPAddress64",
-      "RIPAddress64/8": "RIPAddress64",
-      "RIPAddress64/16": "RIPAddress64",
-      "RIPAddress64/32": "RIPAddress64",
-      "RIPAddress64/64": "RIPAddress64"
+    "argumeng_name_to_type_name" : {
+      "Imm8" : "byte",
+      "Imm16" : "short",
+      "Imm32" : "int",
+      "Imm64" : "long",
+      "GPRegister8" : "GPRegister8",
+      "GPRegister16" : "GPRegister16",
+      "GPRegister32" : "GPRegister32",
+      "GPRegister64" : "GPRegister64",
+      "SegmentRegister" : "SegmentRegister",
+      "GPAddress16/0" : "GPAddress16",
+      "GPAddress16/8" : "GPAddress16",
+      "GPAddress16/16" : "GPAddress16",
+      "GPAddress16/32" : "GPAddress16",
+      "GPAddress16/64" : "GPAddress16",
+      "GPAddress32/0" : "GPAddress32",
+      "GPAddress32/8" : "GPAddress32",
+      "GPAddress32/16" : "GPAddress32",
+      "GPAddress32/32" : "GPAddress32",
+      "GPAddress32/64" : "GPAddress32",
+      "EIPAddress32/0" : "EIPAddress32",
+      "EIPAddress32/8" : "EIPAddress32",
+      "EIPAddress32/16" : "EIPAddress32",
+      "EIPAddress32/32" : "EIPAddress32",
+      "EIPAddress32/64" : "EIPAddress32",
+      "GPAddress64/0" : "GPAddress64",
+      "GPAddress64/8" : "GPAddress64",
+      "GPAddress64/16" : "GPAddress64",
+      "GPAddress64/32" : "GPAddress64",
+      "GPAddress64/64" : "GPAddress64",
+      "RIPAddress64/0" : "RIPAddress64",
+      "RIPAddress64/8" : "RIPAddress64",
+      "RIPAddress64/16" : "RIPAddress64",
+      "RIPAddress64/32" : "RIPAddress64",
+      "RIPAddress64/64" : "RIPAddress64",
+      "AbsoluteAddress64/0" : "AbsoluteAddress64",
+      "AbsoluteAddress64/8" : "AbsoluteAddress64",
+      "AbsoluteAddress64/16" : "AbsoluteAddress64",
+      "AbsoluteAddress64/32" : "AbsoluteAddress64",
+      "AbsoluteAddress64/64" : "AbsoluteAddress64"
     },
-    "instructions": [
+    "instructions" : [
       {
         "arguments" : [],
         "names" : {
+          "aaa/x32" : "0x66? 0xf2? 0xf3? 0x37",
           "aad/x32" : "0x66? 0xf2? 0xf3? 0xd5 +0x0a",
           "aam/x32" : "0x66? 0xf2? 0xf3? 0xd4 +0x0a",
+          "aas/x32" : "0x66? 0xf2? 0xf3? 0x3f",
+          "cbw" : "0xf2? 0xf3? 0x98|0x66 0xf2? 0xf3? 0x98|",
+          "cdq" : "0x66 0xf2? 0xf3? 0x99|0xf2? 0xf3? 0x99|",
+          "cdqe" : "||0x66? 0xf2? 0xf3? rexw 0x98",
+          "clc" : "0x66? 0xf2? 0xf3? rexw? 0xf8",
+          "cld" : "0x66? 0xf2? 0xf3? rexw? 0xfc",
+          "cli" : "0x66? 0xf2? 0xf3? rexw? 0xfa",
+          "cmc" : "0x66? 0xf2? 0xf3? rexw? 0xf5",
+          "cwd" : "0xf2? 0xf3? 0x99|0x66 0xf2? 0xf3? 0x99|",
+          "cwde" : "0x66 0xf2? 0xf3? 0x98|0xf2? 0xf3? 0x98|",
+          "cqo" : "||0x66? 0xf2? 0xf3? rexw 0x99",
+          "daa/x32" : "0x66? 0xf2? 0xf3? 0x27",
+          "das/x32" : "0x66? 0xf2? 0xf3? 0x2f",
+          "hlt" : "0x66? 0xf2? 0xf3? rexw? 0xf4",
+          "int3" : "0x66? 0xf2? 0xf3? rexw? 0xcc",
+          "into/x32" : "0x66? 0xf2? 0xf3? 0xce",
+          "iret" : "0xf2? 0xf3? 0xcf|0x66 0xf2? 0xf3? 0xcf|",
+          "iretd" : "0x66 0xf2? 0xf3? 0xcf|0xf2? 0xf3? 0xcf|",
+          "iretq" : "||0x66? 0xf2? 0xf3? rexw 0xcf",
+          "lahf" : "0x66? 0xf2? 0xf3? 0x9f",
           "nop" : "0x66? 0xf2? 0x90",
-          "pause" : "0x66? 0xf3 0x90"
+          "pause" : "0x66? 0xf3 0x90",
+          "popf" : "0xf2? 0xf3? 0x9d|0x66 0xf2? 0xf3? 0x9d|",
+          "popfd/x32" : "0x66 0xf2? 0xf3? 0x9d|0xf2? 0xf3? 0x9d|",
+          "popfq/x64" : "|0xf2? 0xf3? 0x9d|0x66? 0xf2? 0xf3? rexw 0x9d",
+          "pushf" : "0xf2? 0xf3? 0x9c|0x66 0xf2? 0xf3? 0x9c|",
+          "pushfd/x32" : "0x66 0xf2? 0xf3? 0x9c|0xf2? 0xf3? 0x9c|",
+          "pushfq/x64" : "|0xf2? 0xf3? 0x9c|0x66? 0xf2? 0xf3? rexw 0x9c",
+          "ret" : "0x66? 0xf2? 0xf3? rexw? 0xc3",
+          "ret far" : "0x66? 0xf2? 0xf3? rexw? 0xcb",
+          "sahf" : "0x66? 0xf2? 0xf3? rexw? 0x9e",
+          "stc" : "0x66? 0xf2? 0xf3? rexw? 0xf9",
+          "std" : "0x66? 0xf2? 0xf3? rexw? 0xfd",
+          "sti" : "0x66? 0xf2? 0xf3? rexw? 0xfb",
+          "wait" : "0x66? 0xf2? 0xf3? rexw? 0x9b"
+        }
+      },
+      {
+        "arguments" : ["AX:GPRegister8", "DX:GPRegister16"],
+        "names" : {
+          "in" : "0x66? 0xf2? 0xf3? rexw? 0xec"
+        }
+      },
+      {
+        "arguments" : ["AX:GPRegister16", "DX:GPRegister16"],
+        "names" : {
+          "in" : "0xf2? 0xf3? 0xe5|0x66 0xf2? 0xf3? 0xed|"
+        }
+      },
+      {
+        "arguments" : ["AX:GPRegister32", "DX:GPRegister16"],
+        "names" : {
+          "in" : "0x66 0xf2? 0xf3? 0xed|0xf2? 0xf3? 0xed|0x66? 0xf2? 0xf3? rexw 0xed"
+        }
+      },
+      {
+        "arguments" : ["AX:GPRegister8", "Imm0:AbsMemory8"],
+        "names" : {
+          "mov" : "0x66? 0xf2? 0xf3? rexw? 0xa0"
+        }
+      },
+      {
+        "arguments" : ["AX:GPRegisterNative", "Imm0:AbsMemoryNative"],
+        "names" : {
+          "mov" : "0x66? 0xf2? 0xf3? rexw? 0xa1"
+        }
+      },
+      {
+        "arguments" : ["AX:GPRegister8", "Imm0:Imm8"],
+        "names" : {
+          "adc" : "0x66? 0xf2? 0xf3? rexw? 0x14",
+          "add" : "0x66? 0xf2? 0xf3? rexw? 0x04",
+          "and" : "0x66? 0xf2? 0xf3? rexw? 0x24",
+          "cmp" : "0x66? 0xf2? 0xf3? rexw? 0x3c",
+          "in" : "0x66? 0xf2? 0xf3? rexw? 0xe4",
+          "or" : "0x66? 0xf2? 0xf3? rexw? 0x0c",
+          "sbb" : "0x66? 0xf2? 0xf3? rexw? 0x1c",
+          "sub" : "0x66? 0xf2? 0xf3? rexw? 0x2c",
+          "test" : "0x66? 0xf2? 0xf3? rexw? 0xa8",
+          "xor" : "0x66? 0xf2? 0xf3? rexw? 0x34"
+        }
+      },
+      {
+        "arguments" : ["AX:GPRegister16", "Imm0:Imm8"],
+        "names" : {
+          "in" : "0xf2? 0xf3? 0xe5|0x66 0xf2? 0xf3? 0xe5|"
+        }
+      },
+      {
+        "arguments" : ["AX:GPRegister32", "Imm0:Imm8"],
+        "names" : {
+          "in" : "0x66 0xf2? 0xf3? 0xe5|0xf2? 0xf3? 0xe5|0x66? 0xf2? 0xf3? rexw 0xe5"
+        }
+      },
+      {
+        "arguments" : ["AX:GPRegisterNative", "Imm0:ImmNative"],
+        "names" : {
+          "adc" : "0xf2? 0xf3? 0x15",
+          "add" : "0xf2? 0xf3? 0x05",
+          "and" : "0xf2? 0xf3? 0x25",
+          "cmp" : "0xf2? 0xf3? 0x3d",
+          "or" : "0xf2? 0xf3? 0x0d",
+          "sbb" : "0xf2? 0xf3? 0x1d",
+          "sub" : "0xf2? 0xf3? 0x2d",
+          "test" : "0xf2? 0xf3? 0xa9",
+          "xor" : "0xf2? 0xf3? 0x35"
         }
       },
       {
@@ -92,87 +219,279 @@
         }
       },
       {
-        "arguments" : ["Imm0:Imm8"],
+        "arguments" : ["DX:GPRegister16", "AX:GPRegister8" ],
         "names" : {
-          "aad/x32" : "0x66? 0xf2? 0xf3? 0xd5",
-          "aam/x32" : "0x66? 0xf2? 0xf3? 0xd4"
+          "out" : "0x66? 0xf2? 0xf3? rexw? 0xee"
         }
       },
       {
-        "arguments" : ["Op:GPRegister8", "Imm0:Imm8" ],
+        "arguments" : ["DX:GPRegister16", "AX:GPRegister16"],
+        "names" : {
+          "out" : "0xf2? 0xf3? 0xef|0x66 0xf2? 0xf3? 0xef|"
+        }
+      },
+      {
+        "arguments" : ["DX:GPRegister16", "AX:GPRegister32"],
+        "names" : {
+          "out" : "0x66 0xf2? 0xf3? 0xef|0xf2? 0xf3? 0xef|0x66? 0xf2? 0xf3? rexw 0xef"
+        }
+      },
+      {
+        "arguments" : ["Imm0:AbsMemory8", "AX:GPRegister8"],
+        "names" : {
+          "mov" : "0x66? 0xf2? 0xf3? rexw? 0xa2"
+        }
+      },
+      {
+        "arguments" : ["Imm0:AbsMemoryNative", "AX:GPRegisterNative"],
+        "names" : {
+          "mov" : "0xf2? 0xf3? 0xa3"
+        }
+      },
+      {
+        "arguments" : ["Imm0:Imm8"],
+        "names" : {
+          "aad/x32" : "0x66? 0xf2? 0xf3? 0xd5",
+          "aam/x32" : "0x66? 0xf2? 0xf3? 0xd4",
+          "int" : "0x66? 0xf2? 0xf3? 0xcd"
+        }
+      },
+      {
+        "arguments" : ["Imm0:Imm8", "AX:GPRegister8"],
+        "names" : {
+          "out" : "0x66? 0xf2? 0xf3? rexw? 0xe6"
+        }
+      },
+      {
+        "arguments" : ["Imm0:Imm8", "AX:GPRegister16"],
+        "names" : {
+          "out" : "0xf2? 0xf3? 0xe7|0x66 0xf2? 0xf3? 0xe7|"
+        }
+      },
+      {
+        "arguments" : ["Imm0:Imm8", "AX:GPRegister32"],
+        "names" : {
+          "out" : "0x66 0xf2? 0xf3? 0xe7|0xf2? 0xf3? 0xe7|0x66? 0xf2? 0xf3? rexw 0xe7"
+        }
+      },
+      {
+        "arguments" : ["Op:GPRegister8", "Imm0:Imm8"],
         "names" : {
           "mov" : "0x66? 0xf2? 0xf3? rexw? 0xb0"
         }
       },
       {
-        "arguments" : ["Op:GPRegisterNative" ],
+        "arguments" : ["Op:GPRegisterNative"],
         "names" : {
           "dec/x32" : "0xf2? 0xf3? 0x48",
           "inc/x32" : "0xf2? 0xf3? 0x40"
         }
       },
       {
-        "arguments" : ["Op:GPRegisterNative", "Imm0:ImmNative64" ],
+        "arguments" : ["Op:GPRegisterNative", "Imm0:ImmNative64"],
         "names" : {
           "mov" : "0xf2? 0xf3? 0xb8"
         }
       },
       {
-        "arguments" : ["Reg:GPRegister8", "Rm:GPRegister8/Memory8" ],
+        "arguments" : ["Reg:GPRegister8", "Rm:GPRegister8/Memory8"],
         "names" : {
+          "adc" : "0x66? 0xf2? 0xf3? rexw? 0x12",
           "add" : "0x66? 0xf2? 0xf3? rexw? 0x02",
+          "and" : "0x66? 0xf2? 0xf3? rexw? 0x22",
+          "cmp" : "0x66? 0xf2? 0xf3? rexw? 0x3a",
           "mov" : "0x66? 0xf2? 0xf3? rexw? 0x8a",
-          "sub" : "0x66? 0xf2? 0xf3? rexw? 0x2a"
+          "or" : "0x66? 0xf2? 0xf3? rexw? 0x0a",
+          "sbb" : "0x66? 0xf2? 0xf3? rexw? 0x1a",
+          "sub" : "0x66? 0xf2? 0xf3? rexw? 0x2a",
+          "xor" : "0x66? 0xf2? 0xf3? rexw? 0x32"
         }
       },
       {
-        "arguments" : ["Reg:GPRegisterNative", "Rm:GPRegisterNative/MemoryNative" ],
+        "arguments" : ["Reg:GPRegisterNative", "Rm:GPRegisterNative/MemoryNative"],
         "names" : {
+          "adc" : "0xf2? 0xf3? 0x13",
           "add" : "0xf2? 0xf3? 0x03",
+          "and" : "0xf2? 0xf3? 0x23",
+          "cmp" : "0xf2? 0xf3? 0x3b",
           "mov" : "0xf2? 0xf3? 0x8b",
-          "sub" : "0xf2? 0xf3? 0x2b"
+          "or" : "0xf2? 0xf3? 0x0b",
+          "sbb" : "0xf2? 0xf3? 0x1b",
+          "sub" : "0xf2? 0xf3? 0x2b",
+          "xor" : "0xf2? 0xf3? 0x33"
         }
       },
       {
-        "arguments" : ["Rm:GPRegister8/Memory8" ],
+        "arguments" : ["Reg:GPRegisterNative", "Rm:Memory0"],
+        "names" : {
+          "lea" : "0xf2? 0xf3? 0x8d /m"
+        }
+      },
+      {
+        "arguments" : ["Reg:SegmentRegister", "Rm:Memory16"],
+        "names" : {
+          "mov" : "0xf2? 0xf3? 0x8c /m"
+        }
+      },
+      {
+        "arguments" : ["Rm:GPRegister8/Memory8"],
         "names" : {
           "dec" : "0x66? 0xf2? 0xf3? rexw? 0xfe /1",
-          "inc" : "0x66? 0xf2? 0xf3? rexw? 0xfe /0"
+          "div" : "0x66? 0xf2? 0xf3? rexw? 0xf6 /6",
+          "idiv" : "0x66? 0xf2? 0xf3? rexw? 0xf6 /7",
+          "imul" : "0x66? 0xf2? 0xf3? rexw? 0xf6 /5",
+          "inc" : "0x66? 0xf2? 0xf3? rexw? 0xfe /0",
+          "mul" : "0x66? 0xf2? 0xf3? rexw? 0xf6 /4",
+          "neg" : "0x66? 0xf2? 0xf3? rexw? 0xf6 /3",
+          "not" : "0x66? 0xf2? 0xf3? rexw? 0xf6 /2",
+          "rcl" : "0x66? 0xf2? 0xf3? rexw? 0xd0 /2",
+          "rcr" : "0x66? 0xf2? 0xf3? rexw? 0xd0 /3",
+          "rol" : "0x66? 0xf2? 0xf3? rexw? 0xd0 /0",
+          "ror" : "0x66? 0xf2? 0xf3? rexw? 0xd0 /1",
+          "sar" : "0x66? 0xf2? 0xf3? rexw? 0xd0 /7",
+          "shl" : "0x66? 0xf2? 0xf3? rexw? 0xd0 /4",
+          "shl/x32" : "0x66? 0xf2? 0xf3? rexw? 0xd0 /6",
+          "shl/x64" : "0x66? 0xf2? 0xf3? rexw? 0xd0 /6",
+          "shr" : "0x66? 0xf2? 0xf3? rexw? 0xd0 /5"
         }
       },
       {
-        "arguments" : ["Rm:GPRegister8/Memory8", "Imm0:Imm8" ],
+        "arguments" : ["Rm:GPRegister8/Memory8", "CX:GPRegister8"],
         "names" : {
-          "mov" : "0x66? 0xf2? 0xf3? rexw? 0xc6 /0"
+          "rcl" : "0x66? 0xf2? 0xf3? rexw? 0xd2 /2",
+          "rcr" : "0x66? 0xf2? 0xf3? rexw? 0xd2 /3",
+          "rol" : "0x66? 0xf2? 0xf3? rexw? 0xd2 /0",
+          "ror" : "0x66? 0xf2? 0xf3? rexw? 0xd2 /1",
+          "sar" : "0x66? 0xf2? 0xf3? rexw? 0xd2 /7",
+          "shl" : "0x66? 0xf2? 0xf3? rexw? 0xd2 /4",
+          "shl/x32" : "0x66? 0xf2? 0xf3? rexw? 0xd2 /6",
+          "shl/x64" : "0x66? 0xf2? 0xf3? rexw? 0xd2 /6",
+          "shr" : "0x66? 0xf2? 0xf3? rexw? 0xd2 /5"
         }
       },
       {
-        "arguments" : ["Rm:GPRegisterNative/MemoryNative" ],
+        "arguments" : ["Rm:GPRegister8/Memory8", "Imm0:Imm8"],
+        "names" : {
+          "adc" : "0x66? 0xf2? 0xf3? rexw? 0x80 /2",
+          "adc/x32" : "0x66? 0xf2? 0xf3? rexw? 0x82 /2",
+          "add" : "0x66? 0xf2? 0xf3? rexw? 0x80 /0",
+          "add/x32" : "0x66? 0xf2? 0xf3? rexw? 0x82 /0",
+          "and" : "0x66? 0xf2? 0xf3? rexw? 0x80 /4",
+          "and/x32" : "0x66? 0xf2? 0xf3? rexw? 0x82 /4",
+          "cmp" : "0x66? 0xf2? 0xf3? rexw? 0x80 /7",
+          "cmp/x32" : "0x66? 0xf2? 0xf3? rexw? 0x82 /7",
+          "mov" : "0x66? 0xf2? 0xf3? rexw? 0xc6 /0",
+          "or" : "0x66? 0xf2? 0xf3? rexw? 0x80 /1",
+          "or/x32" : "0x66? 0xf2? 0xf3? rexw? 0x82 /1",
+          "sbb" : "0x66? 0xf2? 0xf3? rexw? 0x80 /3",
+          "sbb/x32" : "0x66? 0xf2? 0xf3? rexw? 0x82 /3",
+          "sub" : "0x66? 0xf2? 0xf3? rexw? 0x80 /5",
+          "sub/x32" : "0x66? 0xf2? 0xf3? rexw? 0x82 /5",
+          "test" : "0x66? 0xf2? 0xf3? rexw? 0xf6 /0",
+          "xor" : "0x66? 0xf2? 0xf3? rexw? 0x80 /6",
+          "xor/x32" : "0x66? 0xf2? 0xf3? rexw? 0x82 /6"
+        }
+      },
+      {
+        "arguments" : ["Rm:GPRegister8/Memory8", "Reg:GPRegister8"],
+        "names" : {
+          "adc" : "0x66? 0xf2? 0xf3? rexw? 0x10",
+          "add" : "0x66? 0xf2? 0xf3? rexw? 0x00",
+          "and" : "0x66? 0xf2? 0xf3? rexw? 0x20",
+          "cmp" : "0x66? 0xf2? 0xf3? rexw? 0x38",
+          "mov" : "0x66? 0xf2? 0xf3? rexw? 0x88",
+          "or" : "0x66? 0xf2? 0xf3? rexw? 0x08",
+          "sbb" : "0x66? 0xf2? 0xf3? rexw? 0x18",
+          "sub" : "0x66? 0xf2? 0xf3? rexw? 0x28",
+          "test" : "0x66? 0xf2? 0xf3? rexw? 0x84",
+          "xchg" : "0x66? 0xf2? 0xf3? rexw? 0x86",
+          "xor" : "0x66? 0xf2? 0xf3? rexw? 0x30"
+        }
+      },
+      {
+        "arguments" : ["Rm:GPRegisterNative/MemoryNative"],
         "names" : {
           "dec" : "0xf2? 0xf3? 0xff /1",
-          "inc" : "0xf2? 0xf3? 0xff /0"
+          "div" : "0xf2? 0xf3? 0xf7 /6",
+          "idiv" : "0xf2? 0xf3? 0xf7 /7",
+          "imul" : "0xf2? 0xf3? 0xf7 /5",
+          "inc" : "0xf2? 0xf3? 0xff /0",
+          "mul" : "0xf2? 0xf3? 0xf7 /4",
+          "neg" : "0xf2? 0xf3? 0xf7 /3",
+          "not" : "0xf2? 0xf3? 0xf7 /2",
+          "rcl" : "0xf2? 0xf3? 0xd1 /2",
+          "rcr" : "0xf2? 0xf3? 0xd1 /3",
+          "rol" : "0xf2? 0xf3? 0xd1 /0",
+          "ror" : "0xf2? 0xf3? 0xd1 /1",
+          "sar" : "0xf2? 0xf3? 0xd1 /7",
+          "shl" : "0xf2? 0xf3? 0xd1 /4",
+          "shl/x32" : "0xf2? 0xf3? 0xd1 /6",
+          "shl/x64" : "0xf2? 0xf3? 0xd1 /6",
+          "shr" : "0xf2? 0xf3? 0xd1 /5"
         }
       },
       {
-        "arguments" : ["Rm:GPRegisterNative/MemoryNative", "Imm0:ImmNative" ],
+        "arguments" : ["Rm:GPRegisterNative/MemoryNative", "CX:GPRegister8"],
         "names" : {
-          "mov" : "0x66? 0xf2? 0xf3? rexw? 0xc7 /0"
+          "rcl" : "0xf2? 0xf3? 0xd3 /2",
+          "rcr" : "0xf2? 0xf3? 0xd3 /3",
+          "rol" : "0xf2? 0xf3? 0xd3 /0",
+          "ror" : "0xf2? 0xf3? 0xd3 /1",
+          "sar" : "0xf2? 0xf3? 0xd3 /7",
+          "shl" : "0xf2? 0xf3? 0xd3 /4",
+          "shl/x32" : "0xf2? 0xf3? 0xd3 /6",
+          "shl/x64" : "0xf2? 0xf3? 0xd3 /6",
+          "shr" : "0xf2? 0xf3? 0xd3 /5"
         }
       },
       {
-        "arguments" : ["Rm:GPRegister8/Memory8", "Reg:GPRegister8" ],
+        "arguments" : ["Rm:GPRegisterNative/MemoryNative", "Imm0:Imm8"],
         "names" : {
-          "add" : "0x66? 0xf2? 0xf3? rexw? 0x00",
-          "mov" : "0x66? 0xf2? 0xf3? rexw? 0x88",
-          "sub" : "0x66? 0xf2? 0xf3? rexw? 0x28"
+          "adc" : "0xf2? 0xf3? 0x83 /2",
+          "add" : "0xf2? 0xf3? 0x83 /0",
+          "and" : "0xf2? 0xf3? 0x83 /4",
+          "cmp" : "0xf2? 0xf3? 0x83 /7",
+          "or" : "0xf2? 0xf3? 0x83 /1",
+          "sbb" : "0xf2? 0xf3? 0x83 /3",
+          "sub" : "0xf2? 0xf3? 0x83 /5",
+          "xor" : "0xf2? 0xf3? 0x83 /6"
         }
       },
       {
-        "arguments" : ["Rm:GPRegisterNative/MemoryNative", "Reg:GPRegisterNative" ],
+        "arguments" : ["Rm:GPRegisterNative/MemoryNative", "Imm0:ImmNative"],
         "names" : {
+          "adc" : "0xf2? 0xf3? 0x81 /2",
+          "add" : "0xf2? 0xf3? 0x81 /0",
+          "and" : "0xf2? 0xf3? 0x81 /4",
+          "cmp" : "0xf2? 0xf3? 0x81 /7",
+          "mov" : "0xf2? 0xf3? 0xc7 /0",
+          "or" : "0xf2? 0xf3? 0x81 /1",
+          "sbb" : "0xf2? 0xf3? 0x81 /3",
+          "sub" : "0xf2? 0xf3? 0x81 /5",
+          "test" : "0xf2? 0xf3? 0xf7 /0",
+          "xor" : "0xf2? 0xf3? 0x81 /6"
+        }
+      },
+      {
+        "arguments" : ["Rm:GPRegisterNative/MemoryNative", "Reg:GPRegisterNative"],
+        "names" : {
+          "adc" : "0xf2? 0xf3? 0x11",
           "add" : "0xf2? 0xf3? 0x01",
+          "and" : "0xf2? 0xf3? 0x21",
+          "cmp" : "0xf2? 0xf3? 0x39",
           "mov" : "0xf2? 0xf3? 0x89",
-          "sub" : "0xf2? 0xf3? 0x29"
+          "or" : "0xf2? 0xf3? 0x09",
+          "sbb" : "0xf2? 0xf3? 0x19",
+          "sub" : "0xf2? 0xf3? 0x29",
+          "test" : "0xf2? 0xf3? 0x85",
+          "xchg" : "0xf2? 0xf3? 0x87",
+          "xor" : "0xf2? 0xf3? 0x31"
+        }
+      },
+      {
+        "arguments" : ["Rm:Memory16", "Reg:SegmentRegister"],
+        "names" : {
+          "mov" : "0xf2? 0xf3? 0x8e /m"
         }
       }
     ]

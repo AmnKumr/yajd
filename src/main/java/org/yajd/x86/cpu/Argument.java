@@ -79,5 +79,9 @@ public interface Argument {
         default Type when(@NotNull RIPAddress64 argument) {
             return when(argument.toArgument());
         }
+
+        default Type when(@NotNull AbsoluteAddress64 argument) {
+            return when(argument.toArgument());
+        }
     }
 }

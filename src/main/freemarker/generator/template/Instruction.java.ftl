@@ -21,6 +21,18 @@
         <#return element_in_list(element, list[1..])>
     </#if>
 </#function>
+<#function remove_adjacent_duplicates list>
+    <#if list?size < 2>
+        <#return list>
+    <#elseif list[0] == list[1]>
+        <#return remove_adjacent_duplicates(list[1..])>
+    <#else>
+        <#return list[0..0] + remove_adjacent_duplicates(list[1..])>
+    </#if>
+</#function>
+<#function sort_and_remove_duplicates list>
+    <#return remove_adjacent_duplicates(list?sort)>
+</#function>
 <#function same_argument_lists x y>
     <#if x?size == 0>
         <#if y?size == 0>
@@ -44,17 +56,26 @@
             <#return [arguments[0]?keep_before(":") + ":" + to[0]] +
                       replace_arguments(arguments[1..], from, to)>
         <#else>
-            <#return [arguments[0]] + replace_arguments(arguments[1..], from, to)>
+            <#return arguments[0..0] + replace_arguments(arguments[1..], from, to)>
         </#if>
     <#else>
         <#return replace_arguments(
-            replace_arguments(arguments, [from[0]], [to[0]]), from[1..], to[1..])>
+            replace_arguments(arguments, from[0..0], to[0..0]), from[1..], to[1..])>
     </#if>
+</#function>
+<#function absolute_address_operand arguments>
+    <#list arguments as argument>
+        <#if element_in_list(argument?keep_after(":"),
+                             ["AbsMemory8", "AbsMemory16", "AbsMemory32", "x64AbsMemory"])>
+            <#return true>
+        </#if>
+    </#list>
+    <#return false>
 </#function>
 <#function address_operand arguments>
     <#list arguments as argument>
         <#if element_in_list(argument?keep_after(":"),
-                             ["Memory8", "Memory16", "Memory32", "x64Memory"])>
+                             ["Memory0", "Memory8", "Memory16", "Memory32", "x64Memory"])>
             <#return true>
         </#if>
     </#list>
@@ -62,7 +83,7 @@
 </#function>
 <#function address64_operand arguments>
     <#list arguments as argument>
-        <#if argument?keep_after(":") == "x64Memory">
+        <#if argument?keep_after(":") == "x64AbsMemory" || argument?keep_after(":") == "x64Memory">
             <#return true>
         </#if>
     </#list>
@@ -76,30 +97,48 @@
             <#local result =
                 [instructions[0] + {"arguments": replace_arguments(
                     instructions[0].arguments,
-                    ["Memory8", "Memory16", "Memory32", "x64Memory"],
-                    ["EIPAddress32/8", "EIPAddress32/16", "EIPAddress32/32", "EIPAddress32/64"])}] +
+                    ["Memory0", "Memory8", "Memory16", "Memory32", "x64Memory"],
+                    ["RIPAddress64/0", "RIPAddress64/8", "RIPAddress64/16", "RIPAddress64/32", "RIPAddress64/64"])}] +
                 [instructions[0] + {"arguments": replace_arguments(
                     instructions[0].arguments,
-                    ["Memory8", "Memory16", "Memory32", "x64Memory"],
-                    ["GPAddress32/8", "GPAddress32/16", "GPAddress32/32", "GPAddress32/64"])}] +
+                    ["Memory0", "Memory8", "Memory16", "Memory32", "x64Memory"],
+                    ["GPAddress64/0", "GPAddress64/8", "GPAddress64/16", "GPAddress64/32", "GPAddress64/64"])}] +
                 [instructions[0] + {"arguments": replace_arguments(
                     instructions[0].arguments,
-                    ["Memory8", "Memory16", "Memory32", "x64Memory"],
-                    ["RIPAddress64/8", "RIPAddress64/16", "RIPAddress64/32", "RIPAddress64/64"])}] +
+                    ["Memory0", "Memory8", "Memory16", "Memory32", "x64Memory"],
+                    ["EIPAddress32/0", "EIPAddress32/8", "EIPAddress32/16", "EIPAddress32/32", "EIPAddress32/64"])}] +
                 [instructions[0] + {"arguments": replace_arguments(
                     instructions[0].arguments,
-                    ["Memory8", "Memory16", "Memory32", "x64Memory"],
-                    ["GPAddress64/8", "GPAddress64/16", "GPAddress64/32", "GPAddress64/64"])}]>
+                    ["Memory0", "Memory8", "Memory16", "Memory32", "x64Memory"],
+                    ["GPAddress32/0", "GPAddress32/8", "GPAddress32/16", "GPAddress32/32", "GPAddress32/64"])}]>
             <#if !address64_operand(instructions[0].arguments)>
                 <#local result = result +
                     [instructions[0] + {"arguments": replace_arguments(
                         instructions[0].arguments,
-                        ["Memory8", "Memory16", "Memory32"],
-                        ["GPAddress16/8", "GPAddress16/16", "GPAddress16/32"])}]>
+                        ["Memory0", "Memory8", "Memory16", "Memory32"],
+                        ["GPAddress16/0", "GPAddress16/8", "GPAddress16/16", "GPAddress16/32"])}]>
+            </#if>
+            <#return result + expand_native_arguments(instructions[1..])>
+        <#elseif absolute_address_operand(instructions[0].arguments)>
+            <#local result =
+                [instructions[0] + {"arguments": replace_arguments(
+                    instructions[0].arguments,
+                    ["AbsMemory8", "AbsMemory16", "AbsMemory32", "x64AbsMemory"],
+                    ["AbsoluteAddress64/8", "AbsoluteAddress64/16", "AbsoluteAddress64/32", "AbsoluteAddress64/64"])}] +
+                [instructions[0] + {"arguments": replace_arguments(
+                    instructions[0].arguments,
+                    ["AbsMemory8", "AbsMemory16", "AbsMemory32", "x64AbsMemory"],
+                    ["GPAddress32/8", "GPAddress32/16", "GPAddress32/32", "GPAddress32/64"])}]>
+            <#if !address64_operand(instructions[0].arguments)>
+                <#local result = result +
+                    [instructions[0] + {"arguments": replace_arguments(
+                    instructions[0].arguments,
+                    ["AbsMemory8", "AbsMemory16", "AbsMemory32"],
+                    ["GPAddress16/8", "GPAddress16/16", "GPAddress16/32"])}]>
             </#if>
             <#return result + expand_native_arguments(instructions[1..])>
         <#else>
-            <#return [instructions[0]] + expand_native_arguments(instructions[1..])>
+            <#return instructions[0..0] + expand_native_arguments(instructions[1..])>
         </#if>
     </#if>
 </#function>
@@ -130,7 +169,15 @@
              names[keys[0]] == "0x48">
             <#local opcode64 = "">
         <#else>
-            <#local opcode64 = opcode_64_bit_prefix + names[keys[0]]>
+            <#if names[keys[0]]?starts_with("0xf2? 0xf3? ")>
+                <#local opcode64 = "0x66? 0xf2? 0xf3? " + opcode_64_bit_prefix + names[keys[0]][12..]>
+            <#elseif names[keys[0]]?starts_with("0xf2 ")>
+                <#local opcode64 = "0x66? 0xf2 " + opcode_64_bit_prefix + names[keys[0]][5..]>
+            <#elseif names[keys[0]]?starts_with("0xf3 ")>
+                <#local opcode64 = "0x66? 0xf3 " + opcode_64_bit_prefix + names[keys[0]][5..]>
+            <#else>
+                <#local opcode64 = "0x66? " + opcode_64_bit_prefix + names[keys[0]]>
+            </#if>
         </#if>
         <#return
             {keys[0]: opcode16 + "|" + opcode32 + "|" + opcode64} +
@@ -152,26 +199,26 @@
                     [instructions[0] + {
                         "arguments": replace_arguments(
                             instructions[0].arguments,
-                            ["GPRegisterNative", "MemoryNative", "ImmNative64", "ImmNative"],
-                            ["GPRegister16", "Memory16", "Imm16", "Imm16"]),
+                            ["GPRegisterNative", "AbsMemoryNative", "MemoryNative", "ImmNative64", "ImmNative"],
+                            ["GPRegister16", "AbsMemory16", "Memory16", "Imm16", "Imm16"]),
                         "names": instructions[0].names + split_opcodes(
                             instructions[0].names?keys,
                             instructions[0].names,
-                            "", "0x66 ", "0x66 ")},
+                            "", "0x66 ", "SKIP")},
                     instructions[0] + {
                         "arguments": replace_arguments(
                             instructions[0].arguments,
-                            ["GPRegisterNative", "MemoryNative", "ImmNative64", "ImmNative"],
-                            ["GPRegister32", "Memory32", "Imm32", "Imm32"]),
+                            ["GPRegisterNative", "AbsMemoryNative", "MemoryNative", "ImmNative64", "ImmNative"],
+                            ["GPRegister32", "AbsMemory32", "Memory32", "Imm32", "Imm32"]),
                         "names": instructions[0].names + split_opcodes(
                             instructions[0].names?keys,
                             instructions[0].names,
-                            "0x66 ", "", "")},
+                            "0x66 ", "", "SKIP")},
                     instructions[0] + {
                         "arguments": replace_arguments(
                             instructions[0].arguments,
-                            ["GPRegisterNative", "MemoryNative", "ImmNative64", "ImmNative"],
-                            ["GPRegister64", "x64Memory", "Imm64", "Imm32"]),
+                            ["GPRegisterNative", "AbsMemoryNative", "MemoryNative", "ImmNative64", "ImmNative"],
+                            ["GPRegister64", "x64AbsMemory", "x64Memory", "Imm64", "Imm32"]),
                         "names": instructions[0].names + split_opcodes(
                             instructions[0].names?keys,
                             instructions[0].names,
@@ -239,7 +286,7 @@
                         instructions[0].names, "/m")}]) +
                 expand_memory_register_arguments(instructions[1..])>
         <#else>
-            <#return expand_native_arguments([instructions[0]]) +
+            <#return expand_native_arguments(instructions[0..0]) +
                      expand_memory_register_arguments(instructions[1..])>
         </#if>
     </#if>
@@ -251,12 +298,12 @@
         <#return []>
     <#elseif existing_names?size == 1>
         <#if existing_names[0]?filter(x -> x == new_names[0])?size == 0>
-            <#return [new_names[0]] + filter_out_instructions(existing_names, new_names[1..])>
+            <#return new_names[0..0] + filter_out_instructions(existing_names, new_names[1..])>
         <#else>
             <#return filter_out_instructions(existing_names, new_names[1..])>
         </#if>
     <#else>
-        <#return filter_out_instructions(existing_names[0],
+        <#return filter_out_instructions(existing_names[0..0],
                      filter_out_instructions(existing_names[1..], new_names))>
     </#if>
 </#function>
@@ -266,7 +313,8 @@
     <#elseif merged_instructions?filter(
                  x -> same_argument_lists(x.arguments, original_instructions[0].arguments))?size == 0>
         <#return merge_instruction(merged_instructions + [
-            original_instructions[0] + {"names": original_instructions[0].names?keys?map(x -> x?keep_before("/"))}],
+            original_instructions[0] + {
+                "names": sort_and_remove_duplicates(original_instructions[0].names?keys?map(x -> x?keep_before("/")))}],
             original_instructions[1..])>
     <#else>
         <#local filtered_names = filter_out_instructions(merged_instructions?filter(
@@ -274,7 +322,7 @@
                     x -> x.names), original_instructions[0].names?keys?map(x -> x?keep_before("/")))>
         <#if filtered_names?size != 0>
             <#return merge_instruction(merged_instructions + [
-                 original_instructions[0] + {"names": filtered_names}],
+                 original_instructions[0] + {"names": sort_and_remove_duplicates(filtered_names)}],
                  original_instructions[1..])>
         <#else>
             <#return merge_instruction(merged_instructions, original_instructions[1..])>
@@ -286,7 +334,7 @@
 </#function>
 <#function classname name arguments>
     <#local result>${
-        name?keep_before("/")?capitalize}<#list arguments as argument>${
+        name?keep_before("/")?capitalize?replace(" ", "")}<#list arguments as argument>${
         argument_to_class_name[argument?keep_after(":")]
     }</#list></#local>
     <#return result>
@@ -474,19 +522,27 @@
     </#list>
     <#return false>
 </#function>
-<#macro implicit_argument type instruction>
+<#macro implicit_argument type reg8bit reg16bit reg32bit reg64bit instruction>
     <#list instruction.arguments as argument>
         <#if argument?starts_with(type)
-            >${{"GPRegister8": "GPRegister8.AL",
-                "GPRegister16": "GPRegister16.AX",
-                "GPRegister32": "GPRegister32.EAX",
-                "GPRegister64": "GPRegister64.RAX"}[argument?keep_after(":")]}</#if
+            >${{"GPRegister8": "GPRegister8." + reg8bit,
+                "GPRegister16": "GPRegister16." + reg16bit,
+                "GPRegister32": "GPRegister32." + reg32bit,
+                "GPRegister64": "GPRegister64." + reg64bit}[argument?keep_after(":")]}</#if
         >
     </#list>
 </#macro>
+<#function has_immediate_address instruction>
+    <#list instruction.arguments as argument>
+        <#if argument?starts_with("Imm0:") && argument?contains("Address")>
+            <#return true>
+        </#if>
+    </#list>
+    <#return false>
+</#function>
 <#function has_immediate_argument0 instruction>
     <#list instruction.arguments as argument>
-        <#if argument?starts_with("Imm0:")>
+        <#if argument?starts_with("Imm0:Imm")>
             <#return true>
         </#if>
     </#list>
@@ -504,7 +560,7 @@
 </#macro>
 <#function has_immediate_argument1 instruction>
     <#list instruction.arguments as argument>
-        <#if argument?starts_with("Imm1:")>
+        <#if argument?starts_with("Imm1:Imm")>
             <#return true>
         </#if>
     </#list>
@@ -530,7 +586,13 @@
 </#macro>
 <#macro parse_immediate_and_implicit_aruments indent instruction>
     <#if has_implicit_argument("AX:", instruction)>
-        ${indent}var implicit_argument_ax = <@implicit_argument "AX:" instruction/>;
+        ${indent}var implicit_argument_ax = <@implicit_argument "AX:" "AL" "AX" "EAX" "RAX" instruction/>;
+    </#if>
+    <#if has_implicit_argument("CX:", instruction)>
+        ${indent}var implicit_argument_cx = <@implicit_argument "CX:" "CL" "CX" "ECX" "RCX" instruction/>;
+    </#if>
+    <#if has_implicit_argument("DX:", instruction)>
+        ${indent}var implicit_argument_dx = <@implicit_argument "DX:" "DL" "DX" "EDX" "RDX" instruction/>;
     </#if>
     <#if has_immediate_argument0(instruction)>
         ${indent}var immediate_argument0 = <@immediate_argument instruction/>;
@@ -547,13 +609,17 @@
 </#macro>
 <#macro make_instruction_with_name instruction_name instruction>
 Optional.of(new ${instruction_name}(<#list instruction.arguments as argument
->${{"AX": "implicit_argument_ax",
-    "Imm0": "immediate_argument0.get()",
-    "Imm1": "immediate_argument1.get()",
-    "Op": "opcode_argument",
-    "Reg": "reg_argument",
-    "Rm" : "rm_argument"}[argument?keep_before(":")]}, </#list
->toPrimitive(deque.toArray(empty_byte_array))))</#macro
+    ><#if argument?starts_with("Imm0:") && argument?contains("Address")>immediate_address<#else
+        >${{"AX": "implicit_argument_ax",
+            "CX": "implicit_argument_cx",
+            "DX": "implicit_argument_dx",
+            "Imm0": "immediate_argument0.get()",
+            "Imm1": "immediate_argument1.get()",
+            "Op": "opcode_argument",
+            "Reg": "reg_argument",
+            "Rm" : "rm_argument"}[argument?keep_before(":")]}</#if
+        >, </#list
+    >toPrimitive(deque.toArray(empty_byte_array))))</#macro
 >
 <#macro make_instruction target_addr instruction>
     <#if target_addr == "">
@@ -1023,13 +1089,12 @@ public interface Instruction {
                                     return Optional.empty();
                                 }
                             </#if>
-                            <#if !opcode_map_x64[opcode_prefix + opcode_value]??>
+                            <#if !opcode_map_x64[opcode_prefix + opcode_value]?? && native_operand_size != 16>
                                 if (mode == Mode.ADDR64_DATA32) {
                                     return Optional.empty();
                                 }
                             </#if>
-                                var opcode_argument = <@argument_from_opcode
-                                   instruction "opcode" "final_rex_prefix"/>;
+                                var opcode_argument = <@argument_from_opcode instruction "opcode" "final_rex_prefix"/>;
                                 <@parse_immediate_and_implicit_aruments ""?left_pad(24) instruction/>
                                 return <@make_instruction "" instruction/>;
                             }
@@ -1049,14 +1114,105 @@ public interface Instruction {
                                     return Optional.empty();
                                 }
                             </#if>
-                            <#if !opcode_map_x64[opcode_prefix + opcode_value]??>
+                            <#if !opcode_map_x64[opcode_prefix + opcode_value]?? && native_operand_size != 16>
                                 if (mode == Mode.ADDR64_DATA32) {
                                     return Optional.empty();
                                 }
                             </#if>
                                 <@parse_immediate_and_implicit_aruments ""?left_pad(24) instruction/>
                                 <@select_insruction_by_immediate ""?left_pad(24) opcode_prefix + opcode_value ""/>
+                            <#if has_immediate_address(instruction)>
+                                <#if native_operand_size == 16>
+                                if (final_x67_prefix) {
+                                    var immediate_argument0 = parseInteger(it);
+                                    if (immediate_argument0.isEmpty()) {
+                                        return Optional.empty();
+                                    }
+                                    var immediate_address = new GPAddress32(
+                                            final_segment, null, null, ScaleFactor.X1, immediate_argument0.get());
+                                    return <@make_instruction "Addr32" instruction/>;
+                                } else {
+                                    var immediate_argument0 = parseShort(it);
+                                    if (immediate_argument0.isEmpty()) {
+                                        return Optional.empty();
+                                    }
+                                    var immediate_address = new GPAddress16(
+                                            final_segment, null, null, immediate_argument0.get());
+                                    return <@make_instruction "Addr16" instruction/>;
+                                }
+                                <#elseif native_operand_size == 32>
+                                if (mode == Mode.ADDR64_DATA32) {
+                                    if (final_x67_prefix) {
+                                        var immediate_argument0 = parseInteger(it);
+                                        if (immediate_argument0.isEmpty()) {
+                                            return Optional.empty();
+                                        }
+                                        var immediate_address = new GPAddress32(
+                                                final_segment, null, null, ScaleFactor.X1, immediate_argument0.get());
+                                        return <@make_instruction "Addr32" instruction/>;
+                                    } else {
+                                        var immediate_argument0 = parseLong(it);
+                                        if (immediate_argument0.isEmpty()) {
+                                            return Optional.empty();
+                                        }
+                                        var immediate_address = new AbsoluteAddress64(
+                                                final_segment, immediate_argument0.get());
+                                        return <@make_instruction "AbsAddr64" instruction/>;
+                                    }
+                                } else {
+                                    if (final_x67_prefix) {
+                                        var immediate_argument0 = parseShort(it);
+                                        if (immediate_argument0.isEmpty()) {
+                                            return Optional.empty();
+                                        }
+                                        var immediate_address = new GPAddress16(
+                                                final_segment, null, null, immediate_argument0.get());
+                                        return <@make_instruction "Addr16" instruction/>;
+                                    } else {
+                                        var immediate_argument0 = parseInteger(it);
+                                        if (immediate_argument0.isEmpty()) {
+                                            return Optional.empty();
+                                        }
+                                        var immediate_address = new GPAddress32(
+                                                final_segment, null, null, ScaleFactor.X1, immediate_argument0.get());
+                                        return <@make_instruction "Addr32" instruction/>;
+                                    }
+                                }
+                                <#else>
+                                if (final_x67_prefix) {
+                                    var immediate_argument0 = parseInteger(it);
+                                    if (immediate_argument0.isEmpty()) {
+                                        return Optional.empty();
+                                    }
+                                    var immediate_address = new GPAddress32(
+                                            final_segment, null, null, ScaleFactor.X1, immediate_argument0.get());
+                                    return <@make_instruction "Addr32" instruction/>;
+                                } else {
+                                    var immediate_argument0 = parseLong(it);
+                                    if (immediate_argument0.isEmpty()) {
+                                        return Optional.empty();
+                                    }
+                                    var immediate_address = new AbsoluteAddress64(
+                                            final_segment, immediate_argument0.get());
+                                    return <@make_instruction "AbsAddr64" instruction/>;
+                                }
+                                </#if>
+                            <#else>
+                                <#if opcode_map_x32[opcode_prefix + opcode_value]?? &&
+                                     opcode_map_x64[opcode_prefix + opcode_value]?? &&
+                                     (opcode_map_x32[opcode_prefix + opcode_value].name !=
+                                      opcode_map_x64[opcode_prefix + opcode_value].name)>
+                                if (mode == Mode.ADDR64_DATA32) {
+                                    <#assign instruction = opcode_map_x64[opcode_prefix + opcode_value]>
+                                    return <@make_instruction "" instruction/>;
+                                } else {
+                                    <#assign instruction = opcode_map_x32[opcode_prefix + opcode_value]>
+                                    return <@make_instruction "" instruction/>;
+                                }
+                                <#else>
                                 return <@make_instruction "" instruction/>;
+                                </#if>
+                            </#if>
                             }
                             <#if element_in_list(opcode_prefix + opcode_value,
                                 ["0x90", "0x66 0x90", "0xf2 0x90", "0xf3 0x90", "0x66 0xf2 0x90", "0x66 0xf3 0x90"])>
@@ -1102,13 +1258,20 @@ public interface Instruction {
                         <#if opcode_map_x32[opcode_prefix + opcode_value + " /m"]??>
                             <#if opcode_map_x32[opcode_prefix + opcode_value + " /r"]??>
                                 <#assign instruction = opcode_map_x32[opcode_prefix + opcode_value + " /m"]>
+                                <#assign incomplete_instruction = false>
                                 else {
                             <#else>
+                                <#assign incomplete_instruction = true>
                                 if ((it.peek() & 0b11_000_000) != 0b11_000_000) {
                             </#if>
                             <@parse_operand_and_return_instruction
                                 ""?left_pad(28) native_operand_size opcode_prefix + opcode_value + " /m" instruction/>
                                 }
+                        <#else>
+                            <#assign incomplete_instruction = true>
+                        </#if>
+                        <#if incomplete_instruction>
+                                return Optional.empty();
                         </#if>
                         <#if x32_x64_difference>
                                 } else {
@@ -1129,15 +1292,22 @@ public interface Instruction {
                             <#if opcode_map_x64[opcode_prefix + opcode_value + " /m"]??>
                                 <#if opcode_map_x64[opcode_prefix + opcode_value + " /r"]??>
                                     <#assign instruction = opcode_map_x64[opcode_prefix + opcode_value + " /m"]>
+                                    <#assign incomplete_instruction = false>
                                 else {
                                 <#else>
+                                    <#assign incomplete_instruction = true>
                                 if ((it.peek() & 0b11_000_000) != 0b11_000_000) {
                                 </#if>
                                     <@parse_operand_and_return_instruction
                                         ""?left_pad(28) native_operand_size opcode_prefix + opcode_value + " /m" instruction/>
                                 }
-                                }
+                            <#else>
+                                <#assign incomplete_instruction = true>
                             </#if>
+                            <#if incomplete_instruction>
+                                return Optional.empty();
+                            </#if>
+                                }
                         </#if>
                             }
                     <#elseif prefix_opcode_map_x32[opcode_prefix + opcode_value + " /r"]?? ||
@@ -1148,82 +1318,89 @@ public interface Instruction {
                                 if (!it.hasNext()) {
                                     return Optional.empty();
                                 }
-                                byte opcode_extension = (byte)(it.peek() & 0b00_111_000);
+                                Supplier<Optional<Instruction>> parse_extension = () -> {
+                                    byte opcode_extension = (byte)(it.peek() & 0b00_111_000);
                         <#if prefix_opcode_map_x32[opcode_prefix + opcode_value + " /r"]?? ||
                              prefix_opcode_map_x64[opcode_prefix + opcode_value + " /r"]??>
-                                if ((it.peek() & 0b11_000_000) == 0b11_000_000) {
-                                    switch (opcode_extension) {
+                                    if ((it.peek() & 0b11_000_000) == 0b11_000_000) {
+                                        switch (opcode_extension) {
                             <#list ["0:000", "1:001", "2:010", "3:011", "4:100", "5:101", "6:110", "7:111"]
                                    as opcode_extension>
                                 <#assign full_opcode = opcode_prefix + opcode_value + " /r /" + opcode_extension?keep_before(":")>
                                 <#if opcode_map_x32[full_opcode]?? || opcode_map_x64[full_opcode]??>
-                                        case 0b00_${opcode_extension?keep_after(":")}_000 :
-                                            {
+                                            case 0b00_${opcode_extension?keep_after(":")}_000 :
+                                                {
                                     <#if !opcode_map_x64[full_opcode]??>
-                                                if (mode == Mode.ADDR64_DATA32) {
-                                                    return Optional.empty();
-                                                }
+                                        <#if native_operand_size != 16>
+                                                    if (mode == Mode.ADDR64_DATA32) {
+                                                        return Optional.empty();
+                                                    }
+                                        </#if>
                                     <#else>
                                         <#assign instruction = opcode_map_x64[full_opcode]>
                                     </#if>
                                     <#if !opcode_map_x32[full_opcode]??>
-                                                if (mode != Mode.ADDR64_DATA32) {
-                                                    return Optional.empty();
-                                                }
+                                                    if (mode != Mode.ADDR64_DATA32) {
+                                                        return Optional.empty();
+                                                    }
                                     <#else>
                                         <#assign instruction = opcode_map_x32[full_opcode]>
                                     </#if>
-                                                var rm_argument = <@rm_argument instruction "it.next()" "final_rex_prefix"/>;
-                                                <@parse_immediate_and_implicit_aruments ""?left_pad(40) instruction/>
-                                                <@select_insruction_by_immediate ""?left_pad(48) full_opcode ""/>
-                                                return <@make_instruction "" instruction/>;
-                                            }
+                                                    var rm_argument = <@rm_argument instruction "it.next()" "final_rex_prefix"/>;
+                                                    <@parse_immediate_and_implicit_aruments ""?left_pad(40) instruction/>
+                                                    <@select_insruction_by_immediate ""?left_pad(48) full_opcode ""/>
+                                                    return <@make_instruction "" instruction/>;
+                                                }
                                 </#if>
                             </#list>
-                                        default:
-                                            return Optional.empty();
+                                            default:
+                                                return Optional.empty();
+                                        }
                                     }
-                                }
                         </#if>
                         <#if prefix_opcode_map_x32[opcode_prefix + opcode_value + " /m"]?? ||
                              prefix_opcode_map_x64[opcode_prefix + opcode_value + " /m"]??>
                             <#if prefix_opcode_map_x32[opcode_prefix + opcode_value + " /r"]?? ||
                                  prefix_opcode_map_x64[opcode_prefix + opcode_value + " /r"]??>
-                                else {
+                                    else {
                             <#else>
-                                if ((it.peek() & 0b11_000_000) != 0b11_000_000) {
+                                    if ((it.peek() & 0b11_000_000) != 0b11_000_000) {
                             </#if>
-                                    switch (opcode_extension) {
+                                        switch (opcode_extension) {
                             <#list ["0:000", "1:001", "2:010", "3:011", "4:100", "5:101", "6:110", "7:111"]
                                    as opcode_extension>
                                 <#assign full_opcode = opcode_prefix + opcode_value + " /m /" + opcode_extension?keep_before(":")>
                                 <#if opcode_map_x32[full_opcode]?? || opcode_map_x64[full_opcode]??>
-                                        case 0b00_${opcode_extension?keep_after(":")}_000 :
-                                            {
+                                            case 0b00_${opcode_extension?keep_after(":")}_000:
+                                                {
                                     <#if !opcode_map_x64[full_opcode]??>
-                                                if (mode == Mode.ADDR64_DATA32) {
-                                                    return Optional.empty();
-                                                }
+                                        <#if native_operand_size != 16>
+                                                    if (mode == Mode.ADDR64_DATA32) {
+                                                        return Optional.empty();
+                                                    }
+                                        </#if>
                                     <#else>
                                         <#assign instruction = opcode_map_x64[full_opcode]>
                                     </#if>
                                     <#if !opcode_map_x32[full_opcode]??>
-                                                if (mode != Mode.ADDR64_DATA32) {
-                                                    return Optional.empty();
-                                                }
+                                                    if (mode != Mode.ADDR64_DATA32) {
+                                                        return Optional.empty();
+                                                    }
                                     <#else>
                                         <#assign instruction = opcode_map_x32[full_opcode]>
                                     </#if>
-                                                <@parse_operand_and_return_instruction
-                                                    ""?left_pad(40) native_operand_size full_opcode instruction/>
-                                            }
+                                                    <@parse_operand_and_return_instruction
+                                                        ""?left_pad(44) native_operand_size full_opcode instruction/>
+                                                }
                                 </#if>
                             </#list>
-                                        default:
-                                            return Optional.empty();
+                                            default:
+                                                return Optional.empty();
+                                        }
                                     }
-                                }
                         </#if>
+                                };
+                                return parse_extension.get();
                             }
                     </#if>
                 </#if>
