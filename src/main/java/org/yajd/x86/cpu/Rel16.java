@@ -2,14 +2,14 @@ package org.yajd.x86.cpu;
 
 import org.jetbrains.annotations.NotNull;
 
-public class Imm8 implements Argument {
-    private final byte value;
+public class Rel16 implements Argument {
+    private final short value;
 
-    public Imm8(byte value) {
+    public Rel16(short value) {
         this.value = value;
     }
 
-    public byte getValue() {
+    public short getValue() {
         return value;
     }
 

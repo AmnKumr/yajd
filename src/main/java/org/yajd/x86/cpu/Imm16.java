@@ -1,6 +1,5 @@
 package org.yajd.x86.cpu;
 
-import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
 public class Imm16 implements Argument {

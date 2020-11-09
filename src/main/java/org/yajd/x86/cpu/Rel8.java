@@ -2,10 +2,10 @@ package org.yajd.x86.cpu;
 
 import org.jetbrains.annotations.NotNull;
 
-public class Imm8 implements Argument {
+public class Rel8 implements Argument {
     private final byte value;
 
-    public Imm8(byte value) {
+    public Rel8(byte value) {
         this.value = value;
     }
 

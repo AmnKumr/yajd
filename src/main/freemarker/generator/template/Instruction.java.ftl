@@ -144,7 +144,7 @@
 </#function>
 <#function native_sized_operand arguments>
     <#list arguments as argument>
-        <#if element_in_list(argument?keep_after(":"), ["GPRegisterNative", "MemoryNative"])>
+        <#if element_in_list(argument?keep_after(":"), ["GPRegisterNative", "MemoryNative", "ImmNative", "RelNative"])>
             <#return true>
         </#if>
     </#list>
@@ -193,14 +193,13 @@
         <#return []>
     <#else>
         <#if native_sized_operand(instructions[0].arguments)>
-
             <#return
                 expand_address_arguments(
                     [instructions[0] + {
                         "arguments": replace_arguments(
                             instructions[0].arguments,
-                            ["GPRegisterNative", "AbsMemoryNative", "MemoryNative", "ImmNative64", "ImmNative"],
-                            ["GPRegister16", "AbsMemory16", "Memory16", "Imm16", "Imm16"]),
+                            ["GPRegisterNative", "AbsMemoryNative", "MemoryNative", "ImmNative64", "ImmNative", "RelNative"],
+                            ["GPRegister16", "AbsMemory16", "Memory16", "Imm16", "Imm16", "Rel16"]),
                         "names": instructions[0].names + split_opcodes(
                             instructions[0].names?keys,
                             instructions[0].names,
@@ -208,8 +207,8 @@
                     instructions[0] + {
                         "arguments": replace_arguments(
                             instructions[0].arguments,
-                            ["GPRegisterNative", "AbsMemoryNative", "MemoryNative", "ImmNative64", "ImmNative"],
-                            ["GPRegister32", "AbsMemory32", "Memory32", "Imm32", "Imm32"]),
+                            ["GPRegisterNative", "AbsMemoryNative", "MemoryNative", "ImmNative64", "ImmNative", "RelNative"],
+                            ["GPRegister32", "AbsMemory32", "Memory32", "Imm32", "Imm32", "Rel32"]),
                         "names": instructions[0].names + split_opcodes(
                             instructions[0].names?keys,
                             instructions[0].names,
@@ -217,8 +216,8 @@
                     instructions[0] + {
                         "arguments": replace_arguments(
                             instructions[0].arguments,
-                            ["GPRegisterNative", "AbsMemoryNative", "MemoryNative", "ImmNative64", "ImmNative"],
-                            ["GPRegister64", "x64AbsMemory", "x64Memory", "Imm64", "Imm32"]),
+                            ["GPRegisterNative", "AbsMemoryNative", "MemoryNative", "ImmNative64", "ImmNative", "RelNative"],
+                            ["GPRegister64", "x64AbsMemory", "x64Memory", "Imm64", "Imm32", "Rel32"]),
                         "names": instructions[0].names + split_opcodes(
                             instructions[0].names?keys,
                             instructions[0].names,
@@ -497,6 +496,28 @@
     'f':"(byte)0x"
     }[value[0]] + value}</#macro
 >
+<#macro consition_from_instruction_suffix instruction_suffix>
+${{"a":"Condition.Above",
+   "ae":"Condition.AboveOrEqual",
+   "b":"Condition.Below",
+   "be":"Condition.BelowOrEqual",
+   "cxz":"Condition.CxZero",
+   "e":"Condition.Equal",
+   "ecxz":"Condition.EcxZero",
+   "g":"Condition.Greater",
+   "ge":"Condition.GreaterOrEqual",
+   "l":"Condition.Less",
+   "le":"Condition.LessOrEqual",
+   "mp":"null",
+   "ne":"Condition.NotEqual",
+   "no":"Condition.NotOverflow",
+   "np":"Condition.NotParity",
+   "ns":"Condition.NotSign",
+   "o":"Condition.Overflow",
+   "p":"Condition.Parity",
+   "rcxz":"Condition.RcxZero",
+   "s":"Condition.Sign"}[instruction_suffix]}</#macro
+>
 <#function argument_in_opcode instruction>
     <#list instruction.arguments as argument>
         <#if argument?starts_with("Op:")>
@@ -542,7 +563,7 @@
 </#function>
 <#function has_immediate_argument0 instruction>
     <#list instruction.arguments as argument>
-        <#if argument?starts_with("Imm0:Imm")>
+        <#if argument?starts_with("Imm0:Imm") || argument?starts_with("Imm0:Rel")>
             <#return true>
         </#if>
     </#list>
@@ -554,13 +575,16 @@
         >${{"Imm8": "parseByte(it)",
             "Imm16": "parseShort(it)",
             "Imm32": "parseInteger(it)",
-            "Imm64": "parseLong(it)"}[argument?keep_after(":")]}</#if
+            "Imm64": "parseLong(it)",
+            "Rel8": "parseByte(it)",
+            "Rel16": "parseShort(it)",
+            "Rel32": "parseInteger(it)"}[argument?keep_after(":")]}</#if
         >
     </#list>
 </#macro>
 <#function has_immediate_argument1 instruction>
     <#list instruction.arguments as argument>
-        <#if argument?starts_with("Imm1:Imm")>
+        <#if argument?starts_with("Imm1:Imm") || argument?starts_with("Imm1:Rel:")>
             <#return true>
         </#if>
     </#list>
@@ -609,7 +633,9 @@
 </#macro>
 <#macro make_instruction_with_name instruction_name instruction>
 Optional.of(new ${instruction_name}(<#list instruction.arguments as argument
-    ><#if argument?starts_with("Imm0:") && argument?contains("Address")>immediate_address<#else
+    ><#if argument?starts_with("Imm0:") && argument?contains("Address")>immediate_address<#elseif
+            argument?starts_with("Imm0:") && argument?contains("Rel")
+        >new ${argument?keep_after(":")}(immediate_argument0.get())<#else
         >${{"AX": "implicit_argument_ax",
             "CX": "implicit_argument_cx",
             "DX": "implicit_argument_dx",
@@ -813,16 +839,36 @@ public interface Instruction {
         default Type when(Instruction argument) {
             return null;
         }
+        default Type when(Jcc argument) {
+            return when((Instruction) argument);
+        }
         default Type when(BadInstruction argument) {
             return when((Instruction) argument);
         }
 <#list merged_instruction_classes_list as instruction_class>
     <#list instruction_class.names as instruction_name>
         default Type when(${classname(instruction_name, instruction_class.arguments)} argument) {
+        <#if instruction_name?starts_with("j")>
+            return when((Jcc) argument);
+        <#else>
             return when((Instruction) argument);
+        </#if>
         }
     </#list>
 </#list>
+    }
+
+    abstract class Jcc implements Instruction {
+        final private Condition condition;
+
+        @Contract(pure = true)
+        Jcc(Condition condition) {
+            this.condition = condition;
+        }
+
+        public Optional<Condition> getCondition() {
+            return Optional.ofNullable(condition);
+        }
     }
 
     final class BadInstruction implements Instruction {
@@ -853,7 +899,8 @@ public interface Instruction {
 
 <#list merged_instruction_classes_list as instruction_class>
     <#list instruction_class.names as instruction_name>
-    final class ${classname(instruction_name, instruction_class.arguments)} implements Instruction {
+    final class ${classname(instruction_name, instruction_class.arguments)} <#if
+            instruction_name?starts_with("j")>extends Jcc<#else>implements Instruction</#if> {
         final private byte[] bytes;
         <#list instruction_class.arguments as argument>
         final private ${argumeng_name_to_type_name[argument?keep_after(":")]} arg${argument?index};
@@ -863,6 +910,9 @@ public interface Instruction {
         instruction_class.arguments as argument>${
             argumeng_name_to_type_name[argument?keep_after(":")]} arg${argument?index}<#sep>, </#sep></#list
         ><#if instruction_class.arguments?size != 0>,</#if> byte[] bytes) {
+        <#if instruction_name?starts_with("j")>
+            super(<@consition_from_instruction_suffix instruction_name[1..]/>);
+        </#if>
         <#list instruction_class.arguments as argument>
             <#if argument?contains("/")>
             this.arg${argument?index} = new ${argumeng_name_to_type_name[argument?keep_after(":")]}(arg${
@@ -886,8 +936,9 @@ public interface Instruction {
 
         public @NotNull Argument[] getArguments() {
             return new Argument[]{<#list instruction_class.arguments as argument
-                > <#if argument?contains(":Imm")>new ${argument?keep_after(":")}(arg${argument?index})<#else
-                  >arg${argument?index}.toArgument()</#if><#sep>, </#sep></#list>};
+                > <#if argument?contains(":Imm")>new ${argument?keep_after(":")}(arg${argument?index})<#elseif
+                      argument?contains(":Rel")>arg${argument?index}<#else
+                      >arg${argument?index}.toArgument()</#if><#sep>, </#sep></#list>};
         }
 
         <#list instruction_class.arguments as argument>
@@ -896,7 +947,6 @@ public interface Instruction {
         }
 
         </#list>
-
         byte[] getBytes() {
             return bytes;
         }
@@ -1038,7 +1088,7 @@ public interface Instruction {
         <#assign opcode_map_x64 = opcode_map_32_x64>
         <#assign prefix_opcode_map_x32 = prefix_opcode_map_32_x32>
         <#assign prefix_opcode_map_x64 = prefix_opcode_map_32_x64>
-    <#else>
+    <#else><#-- native_operand_size == 64-->
         <#assign opcode_map_x32 = opcode_map_64>
         <#assign opcode_map_x64 = opcode_map_64>
         <#assign prefix_opcode_map_x32 = prefix_opcode_map_64>
@@ -1119,7 +1169,12 @@ public interface Instruction {
                                     return Optional.empty();
                                 }
                             </#if>
+                            <#if !(opcode_map_x32[opcode_prefix + opcode_value]??) ||
+                                 !(opcode_map_x64[opcode_prefix + opcode_value]??) ||
+                                 same_argument_lists(opcode_map_x32[opcode_prefix + opcode_value].arguments,
+                                                     opcode_map_x64[opcode_prefix + opcode_value].arguments)>
                                 <@parse_immediate_and_implicit_aruments ""?left_pad(24) instruction/>
+                            </#if>
                                 <@select_insruction_by_immediate ""?left_pad(24) opcode_prefix + opcode_value ""/>
                             <#if has_immediate_address(instruction)>
                                 <#if native_operand_size == 16>
@@ -1178,7 +1233,7 @@ public interface Instruction {
                                         return <@make_instruction "Addr32" instruction/>;
                                     }
                                 }
-                                <#else>
+                                <#else><#-- native_operand_size == 64-->
                                 if (final_x67_prefix) {
                                     var immediate_argument0 = parseInteger(it);
                                     if (immediate_argument0.isEmpty()) {
@@ -1197,11 +1252,34 @@ public interface Instruction {
                                     return <@make_instruction "AbsAddr64" instruction/>;
                                 }
                                 </#if>
+                            <#-- Jcxz/Jecxz/Jrcxz are unique because name depends on size of address, not data operand -->
+                            <#elseif element_in_list(instruction.name, ["JcxzRel8", "JecxzRel8", "JrcxzRel8"])>
+                                <#if native_operand_size == 64>
+                                if (final_x67_prefix) {
+                                    return <@make_instruction_with_name "JecxzRel8" instruction/>;
+                                } else {
+                                    return <@make_instruction_with_name "JrcxzRel8" instruction/>;
+                                }
+                                <#else>
+                                if (mode == Mode.ADDR64_DATA32) {
+                                    if (final_x67_prefix) {
+                                        return <@make_instruction_with_name "JecxzRel8" instruction/>;
+                                    } else {
+                                        return <@make_instruction_with_name "JrcxzRel8" instruction/>;
+                                    }
+                                } else if ((Mode.addressSize(mode) == 32) ^ final_x67_prefix) {
+                                    return <@make_instruction_with_name "JecxzRel8" instruction/>;
+                                } else {
+                                    return <@make_instruction_with_name "JcxzRel8" instruction/>;
+                                }
+                                </#if>
                             <#else>
                                 <#if opcode_map_x32[opcode_prefix + opcode_value]?? &&
                                      opcode_map_x64[opcode_prefix + opcode_value]?? &&
                                      (opcode_map_x32[opcode_prefix + opcode_value].name !=
                                       opcode_map_x64[opcode_prefix + opcode_value].name)>
+                                    <#if same_argument_lists(opcode_map_x32[opcode_prefix + opcode_value].arguments,
+                                                             opcode_map_x64[opcode_prefix + opcode_value].arguments)>
                                 if (mode == Mode.ADDR64_DATA32) {
                                     <#assign instruction = opcode_map_x64[opcode_prefix + opcode_value]>
                                     return <@make_instruction "" instruction/>;
@@ -1209,6 +1287,17 @@ public interface Instruction {
                                     <#assign instruction = opcode_map_x32[opcode_prefix + opcode_value]>
                                     return <@make_instruction "" instruction/>;
                                 }
+                                    <#else>
+                                if (mode == Mode.ADDR64_DATA32) {
+                                    <#assign instruction = opcode_map_x64[opcode_prefix + opcode_value]>
+                                    <@parse_immediate_and_implicit_aruments ""?left_pad(28) instruction/>
+                                    return <@make_instruction "" instruction/>;
+                                } else {
+                                    <#assign instruction = opcode_map_x32[opcode_prefix + opcode_value]>
+                                    <@parse_immediate_and_implicit_aruments ""?left_pad(28) instruction/>
+                                    return <@make_instruction "" instruction/>;
+                                }
+                                    </#if>
                                 <#else>
                                 return <@make_instruction "" instruction/>;
                                 </#if>

@@ -14,6 +14,7 @@
 
 package org.yajd.x86.cpu;
 
+import org.codehaus.plexus.util.cli.Arg;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -281,6 +282,70 @@ public class InstructionTest {
                 arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x49, (byte)0xff, (byte)0xc5}, "IncReg64", GPRegister64.R13),
                 arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x49, (byte)0xff, (byte)0xc6}, "IncReg64", GPRegister64.R14),
                 arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x49, (byte)0xff, (byte)0xc7}, "IncReg64", GPRegister64.R15));
+    }
+
+    static @NotNull Stream<Arguments> oneArgumentInstructions() {
+        return Stream.of(
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{(byte) 0x70, 0x01}, "JoRel8", Rel8.class, (byte) 1),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{(byte) 0x71, 0x02}, "JnoRel8", Rel8.class, (byte) 2),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{(byte) 0x72, 0x03}, "JbRel8", Rel8.class, (byte) 3),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{(byte) 0x73, 0x04}, "JaeRel8", Rel8.class, (byte) 4),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{(byte) 0x74, 0x05}, "JeRel8", Rel8.class, (byte) 5),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{(byte) 0x75, 0x06}, "JneRel8", Rel8.class, (byte) 6),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{(byte) 0x76, 0x07}, "JbeRel8", Rel8.class, (byte) 7),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{(byte) 0x77, 0x08}, "JaRel8", Rel8.class, (byte) 8),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{(byte) 0x78, 0x09}, "JsRel8", Rel8.class, (byte) 9),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{(byte) 0x79, 0x0a}, "JnsRel8", Rel8.class, (byte) 10),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{(byte) 0x7a, 0x0b}, "JpRel8", Rel8.class, (byte) 11),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{(byte) 0x7b, 0x0c}, "JnpRel8", Rel8.class, (byte) 12),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{(byte) 0x7c, 0x0d}, "JlRel8", Rel8.class, (byte) 13),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{(byte) 0x7d, 0x0e}, "JgeRel8", Rel8.class, (byte) 14),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{(byte) 0x7e, 0x0f}, "JleRel8", Rel8.class, (byte) 15),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{(byte) 0x7f, 0x10}, "JgRel8", Rel8.class, (byte) 16),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{(byte) 0xe3, 0x11}, "JcxzRel8", Rel8.class, (byte) 17),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x67, (byte) 0xe3, 0x12}, "JecxzRel8", Rel8.class, (byte) 18),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x66, (byte) 0xe3, 0x13}, "JcxzRel8", Rel8.class, (byte) 19),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x66, 0x67, (byte) 0xe3, 0x14}, "JecxzRel8", Rel8.class, (byte) 20),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{(byte) 0xe3, 0x15}, "JcxzRel8", Rel8.class, (byte) 21),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x67, (byte) 0xe3, 0x16}, "JecxzRel8", Rel8.class, (byte) 22),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x66, (byte) 0xe3, 0x17}, "JcxzRel8", Rel8.class, (byte) 23),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x66, 0x67, (byte) 0xe3, 0x18}, "JecxzRel8", Rel8.class, (byte) 24),
+                arguments(Instruction.Mode.ADDR32_DATA16, new Byte[]{(byte) 0xe3, 0x19}, "JecxzRel8", Rel8.class, (byte) 25),
+                arguments(Instruction.Mode.ADDR32_DATA16, new Byte[]{0x67, (byte) 0xe3, 0x1a}, "JcxzRel8", Rel8.class, (byte) 26),
+                arguments(Instruction.Mode.ADDR32_DATA16, new Byte[]{0x66, (byte) 0xe3, 0x1b}, "JecxzRel8", Rel8.class, (byte) 27),
+                arguments(Instruction.Mode.ADDR32_DATA16, new Byte[]{0x66, 0x67, (byte) 0xe3, 0x1c}, "JcxzRel8", Rel8.class, (byte) 28),
+                arguments(Instruction.Mode.ADDR32_DATA32, new Byte[]{(byte) 0xe3, 0x1d}, "JecxzRel8", Rel8.class, (byte) 29),
+                arguments(Instruction.Mode.ADDR32_DATA32, new Byte[]{0x67, (byte) 0xe3, 0x1e}, "JcxzRel8", Rel8.class, (byte) 30),
+                arguments(Instruction.Mode.ADDR32_DATA32, new Byte[]{0x66, (byte) 0xe3, 0x1f}, "JecxzRel8", Rel8.class, (byte) 31),
+                arguments(Instruction.Mode.ADDR32_DATA32, new Byte[]{0x66, 0x67, (byte) 0xe3, 0x20}, "JcxzRel8", Rel8.class, (byte) 32),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{(byte) 0xe3, 0x21}, "JrcxzRel8", Rel8.class, (byte) 33),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x67, (byte) 0xe3, 0x22}, "JecxzRel8", Rel8.class, (byte) 34),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x66, (byte) 0xe3, 0x23}, "JrcxzRel8", Rel8.class, (byte) 35),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x66, 0x67, (byte) 0xe3, 0x24}, "JecxzRel8", Rel8.class, (byte) 36),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x40, (byte) 0xe3, 0x25}, "JrcxzRel8", Rel8.class, (byte) 37),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x67, 0x40, (byte) 0xe3, 0x26}, "JecxzRel8", Rel8.class, (byte) 38),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x66, 0x40, (byte) 0xe3, 0x27}, "JrcxzRel8", Rel8.class, (byte) 39),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x66, 0x67, 0x40, (byte) 0xe3, 0x28}, "JecxzRel8", Rel8.class, (byte) 40),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x48, (byte) 0xe3, 0x29}, "JrcxzRel8", Rel8.class, (byte) 41),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x67, 0x48, (byte) 0xe3, 0x2a}, "JecxzRel8", Rel8.class, (byte) 42),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x66, 0x48, (byte) 0xe3, 0x2b}, "JrcxzRel8", Rel8.class, (byte) 43),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x66, 0x67, 0x48, (byte) 0xe3, 0x2c}, "JecxzRel8", Rel8.class, (byte) 44),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{(byte) 0xeb, 0x2d}, "JmpRel8", Rel8.class, (byte) 45),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{(byte) 0xeb, 0x2e}, "JmpRel8", Rel8.class, (byte) 46),
+                arguments(Instruction.Mode.ADDR32_DATA16, new Byte[]{(byte) 0xeb, 0x2f}, "JmpRel8", Rel8.class, (byte) 47),
+                arguments(Instruction.Mode.ADDR32_DATA32, new Byte[]{(byte) 0xeb, 0x30}, "JmpRel8", Rel8.class, (byte) 48),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{(byte) 0xeb, 0x31}, "JmpRel8", Rel8.class, (byte) 49),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{(byte) 0xe9, 0x32, 0x01}, "JmpRel16", Rel16.class, (short) 0x0132),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{(byte) 0xe9, 0x33, 0x03, 0x02, 0x01}, "JmpRel32", Rel32.class, 0x01020333),
+                arguments(Instruction.Mode.ADDR32_DATA16, new Byte[]{(byte) 0xe9, 0x34, 0x01}, "JmpRel16", Rel16.class, (short) 0x0134),
+                arguments(Instruction.Mode.ADDR32_DATA32, new Byte[]{(byte) 0xe9, 0x35, 0x03, 0x02, 0x01}, "JmpRel32", Rel32.class, 0x01020335),
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{(byte) 0xe9, 0x36, 0x03, 0x02, 0x01}, "JmpRel32", Rel32.class, 0x01020336),
+                arguments(Instruction.Mode.ADDR16_DATA16, new Byte[]{0x66, (byte) 0xe9, 0x37, 0x03, 0x02, 0x01}, "JmpRel32", Rel32.class, 0x01020337),
+                arguments(Instruction.Mode.ADDR16_DATA32, new Byte[]{0x66, (byte) 0xe9, 0x38, 0x01}, "JmpRel16", Rel16.class, (short) 0x0138),
+                arguments(Instruction.Mode.ADDR32_DATA16, new Byte[]{0x66, (byte) 0xe9, 0x39, 0x03, 0x02, 0x01}, "JmpRel32", Rel32.class, 0x01020339),
+                arguments(Instruction.Mode.ADDR32_DATA32, new Byte[]{0x66, (byte) 0xe9, 0x3a, 0x01}, "JmpRel16", Rel16.class, (short) 0x013a),
+                // Implement Intel mode for now: https://bugs.chromium.org/p/nativeclient/issues/detail?id=2578
+                arguments(Instruction.Mode.ADDR64_DATA32, new Byte[]{0x66, (byte) 0xe9, 0x3b, 0x03, 0x02, 0x01}, "JmpRel32", Rel32.class, 0x0102033b));
     }
 
     static @NotNull Stream<Arguments> twoArgumentImmediateEncoding() {
@@ -674,6 +739,47 @@ public class InstructionTest {
         }
         assertEquals(disp, address.getClass().getMethod("getDisp").invoke(address));
         assertEquals(size, address.getClass().getMethod("getSize").invoke(address));
+    }
+
+    @ParameterizedTest
+    @MethodSource("oneArgumentInstructions")
+    @DisplayName("One argument instruction parse test")
+    void testParseOneArgumentInstructions(
+            @NotNull Instruction.Mode mode, Byte[] opcodes, String name, Class<?> argument_class, Object argument) throws Exception {
+        Optional<Instruction> instruction =
+                Instruction.parse(mode, new RollbackIterator<>(Arrays.asList(opcodes).iterator()));
+        assertEquals(
+                "org.yajd.x86.cpu.Instruction$" + name,
+                instruction.get().getClass().getName());
+        var arguments = instruction.get().getArguments();
+        var rel_argument = arguments[0].process(new Argument.Result<Boolean>() {
+            @Override
+            public Boolean when(@NotNull Argument argument) {
+                return false;
+            }
+
+            @Override
+            public Boolean when(@NotNull Rel8 argument) {
+                return true;
+            }
+
+            @Override
+            public Boolean when(@NotNull Rel16 argument) {
+                return true;
+            }
+
+            @Override
+            public Boolean when(@NotNull Rel32 argument) {
+                return true;
+            }
+        });
+        var actual = instruction.get().getClass().getMethod("getArg0").invoke(instruction.get());
+        assertEquals(argument_class, actual.getClass());
+        if (rel_argument) {
+            assertEquals(argument, actual.getClass().getMethod("getValue").invoke(actual));
+        } else {
+            assertEquals(argument, actual);
+        }
     }
 
     @ParameterizedTest

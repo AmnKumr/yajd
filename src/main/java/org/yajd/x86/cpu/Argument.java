@@ -24,6 +24,10 @@ public interface Argument {
             return null;
         }
 
+        default Type when(@NotNull Condition argument) {
+            return when(argument.toArgument());
+        }
+
         default Type when(@NotNull GPRegister8 argument) {
             return when(argument.toArgument());
         }
@@ -57,6 +61,18 @@ public interface Argument {
         }
 
         default Type when(@NotNull Imm64 argumet) {
+            return when((Argument)argumet);
+        }
+
+        default Type when(@NotNull Rel8 argumet) {
+            return when((Argument)argumet);
+        }
+
+        default Type when(@NotNull Rel16 argumet) {
+            return when((Argument)argumet);
+        }
+
+        default Type when(@NotNull Rel32 argumet) {
             return when((Argument)argumet);
         }
 
