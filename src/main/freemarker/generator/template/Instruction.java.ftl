@@ -862,7 +862,11 @@ ${indent}}
 </#macro>
 <#function adjust_instruction_name prefix_under_test instruction_name>
      <#if prefix_under_test == "addr">
-         <#if instruction_name?contains("Addr32")>
+         <#if instruction_name?contains("ecxz")>
+             <#return instruction_name?replace("ecxz", "cxz")>
+          <#elseif instruction_name?contains("cxz")>
+              <#return instruction_name?replace("rcxz", "cxz")?replace("cxz", "ecxz")>
+         <#elseif instruction_name?contains("Addr32")>
              <#return instruction_name?replace("Addr32", "Addr16")>
          <#else>
              <#return instruction_name?
@@ -991,19 +995,19 @@ ${indent}}
                         <#if prefix_under_test == "addr">
                             <#-- Only verify inter-mode settings if "canonical" modes 2/3 are included.
                                  We only use 0..3 and 4..4 cases, thus it's enough. -->
-                            <#if element_in_list(2, modes) && element_in_list(3, modes)>
+                            <#if element_in_list(ADDR32_DATA32, modes) && element_in_list(ADDR32_DATA16, modes)>
                                 <#if ((mode / 2) % 10) != 1>
                                     <#if opcode_maps[mode][opcodes_with_prefix].name !=
-                                             opcode_maps[2 + mode % 2][opcodes_no_prefix].name ||
+                                             opcode_maps[ADDR32_DATA32 + mode % 2][opcodes_no_prefix].name ||
                                          !same_argument_lists(opcode_maps[mode][opcodes_with_prefix].arguments,
-                                                              opcode_maps[2 + mode % 2][opcodes_no_prefix].arguments)>
+                                                              opcode_maps[ADDR32_DATA32 + mode % 2][opcodes_no_prefix].arguments)>
                                         <#return true>
                                     </#if>
                                 <#else>
                                     <#if opcode_maps[mode][opcodes_with_prefix].name !=
-                                             opcode_maps[2 + mode % 2][opcodes_with_prefix].name ||
+                                             opcode_maps[ADDR32_DATA32 + mode % 2][opcodes_with_prefix].name ||
                                          !same_argument_lists(opcode_maps[mode][opcodes_with_prefix].arguments,
-                                                              opcode_maps[2 + mode % 2][opcodes_with_prefix].arguments)>
+                                                              opcode_maps[ADDR32_DATA32 + mode % 2][opcodes_with_prefix].arguments)>
                                         <#return true>
                                     </#if>
                                 </#if>
@@ -1192,26 +1196,26 @@ ${indent}}
             <#local memory_mode = true>
         </#if>
     </#list>
-    <#local active_modes_memory = modes?filter(mode -> (mode != 1 || x66_prefix_flavor != "ignored") &&
-                                                       (mode != 3 || x66_prefix_flavor != "ignored") &&
-                                                       (mode < 2 || x67_prefix_flavor != "ignored"))>
-    <#local active_modes_no_memory = active_modes_memory?filter(mode -> mode < 2 || x67_prefix_flavor != "address")>
+    <#local active_modes_memory = modes?filter(mode -> (mode != ADDR16_DATA16 || x66_prefix_flavor != "ignored") &&
+                                                       (mode != ADDR32_DATA16 || x66_prefix_flavor != "ignored") &&
+                                                       (mode < ADDR32_DATA32 || x67_prefix_flavor != "ignored"))>
+    <#local active_modes_no_memory = active_modes_memory?filter(mode -> mode < ADDR32_DATA32 || x67_prefix_flavor != "address")>
     <#if active_modes_memory?size == 0>
         <#if modes?size == 1 && modes[0] == ADDR64_DATA32>
-            <#local active_modes_memory = [4]>
+            <#local active_modes_memory = [ADDR64_DATA32]>
         <#else>
             ${["Mode selection error"] + 1}
         </#if>
     </#if>
     <#if active_modes_no_memory?size == 0>
         <#if modes?size == 1 && modes[0] == ADDR64_DATA32>
-            <#local active_modes_no_memory = [4]>
+            <#local active_modes_no_memory = [ADDR64_DATA32]>
         <#else>
             ${["Mode selection error"] + 1}
         </#if>
     </#if>
     <#if no_modrm_mode>
-        <@mode_selection indent active_modes_no_memory prefixes_and_opcode x66_prefix_flavor x67_prefix_flavor ;
+        <@mode_selection indent active_modes_memory prefixes_and_opcode x66_prefix_flavor x67_prefix_flavor ;
                          indent, mode, prefixes_and_opcode>
             <#local instruction = opcode_maps[mode][prefixes_and_opcode]>
             <#if argument_in_opcode(instruction)>
