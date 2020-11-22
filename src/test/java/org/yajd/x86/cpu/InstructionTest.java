@@ -14,7 +14,6 @@
 
 package org.yajd.x86.cpu;
 
-import org.codehaus.plexus.util.cli.Arg;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
