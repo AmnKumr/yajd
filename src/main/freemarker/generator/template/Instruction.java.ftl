@@ -459,10 +459,16 @@
 </#function>
 <#function opcode_optional_prefixes_expand opcode>
     <#if opcode?contains("?")>
-        <#return opcode_optional_prefixes_expand(
-                     opcode?keep_before("?")?ensure_starts_with(" ")?keep_before_last(" ") + opcode?keep_after("?")) +
-                 opcode_optional_prefixes_expand(
-                     opcode?keep_before("?") + opcode?keep_after("?"))>
+        <#-- combination of 0xf2 and 0xf3 prefixes is never valid-->
+        <#if opcode?keep_before("?")?contains("0xf2 0xf3")>
+            <#return opcode_optional_prefixes_expand(
+                         opcode?keep_before("?")?ensure_starts_with(" ")?keep_before_last(" ") + opcode?keep_after("?"))>
+        <#else>
+            <#return opcode_optional_prefixes_expand(
+                         opcode?keep_before("?")?ensure_starts_with(" ")?keep_before_last(" ") + opcode?keep_after("?")) +
+                     opcode_optional_prefixes_expand(
+                         opcode?keep_before("?") + opcode?keep_after("?"))>
+        </#if>
     <#else>
         <#return [opcode?trim]>
     </#if>
@@ -556,10 +562,10 @@
                 ${sep}"${opcode_prefix?join(" ")}" :
                 <@(
                     "<#assign ${opcode_prefix_name}>" +
-                        "<#if ${opcode_prefix_name}??>" +
-                            r"${" + "${opcode_prefix_name}} +" +
-                        "</#if>" +
                         "[${opcode_suffix_name}]" +
+                        "<#if ${opcode_prefix_name}??>" +
+                            r"+ ${" + "${opcode_prefix_name}}" +
+                        "</#if>" +
                     "</#assign>" +
                     "true")?interpret />
                     <#local sep = ",">
