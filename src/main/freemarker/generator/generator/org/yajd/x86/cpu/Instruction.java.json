@@ -148,9 +148,25 @@
         }
       },
       {
+        "arguments" : ["AX:GPRegister8", "DI:Memory8"],
+        "names" : {
+          "scas" : "0x66? rexw? 0xae",
+          "repnz scas" : "0x66? 0xf2 rexw? 0xae",
+          "rep scas" : "0x66? 0xf3 rexw? 0xae"
+        }
+      },
+      {
         "arguments" : ["AX:GPRegister8", "DX:GPRegister16"],
         "names" : {
           "in" : "0x66? 0x67? 0xf2? 0xf3? rexw? 0xec"
+        }
+      },
+      {
+        "arguments" : ["AX:GPRegister8", "SI:Memory8"],
+        "names" : {
+          "lods" : "0x66? rexw? 0xac",
+          "repnz lods" : "0x66? 0xf2 rexw? 0xac",
+          "rep lods" : "0x66? 0xf3 rexw? 0xac"
         }
       },
       {
@@ -173,9 +189,25 @@
         }
       },
       {
+        "arguments" : ["AX:GPRegisterNative", "DI:MemoryNative"],
+        "names" : {
+          "scas" : "0xaf",
+          "repnz scas" : "0xf2 0xaf",
+          "repz scas" : "0xf3 0xaf"
+        }
+      },
+      {
         "arguments" : ["AX:GPRegisterNative", "Imm0:AbsMemoryNative"],
         "names" : {
           "mov" : "0xf2? 0xf3? 0xa1"
+        }
+      },
+      {
+        "arguments" : ["AX:GPRegisterNative", "SI:MemoryNative"],
+        "names" : {
+          "lods" : "0xad",
+          "repnz lods" : "0xf2 0xad",
+          "rep lods" : "0xf3 0xad"
         }
       },
       {
@@ -243,6 +275,38 @@
         "names" : {
           "out" : "0x67? 0xf2? 0xf3? 0xef|0x66 0x67? 0xf2? 0xf3? 0xef",
           "out/x64" : "0x66? 0x67? 0xf2? 0xf3? rexw 0xef"
+        }
+      },
+      {
+        "arguments" : ["DI:Memory8", "AX:GPRegister8"],
+        "names" : {
+          "stos" : "0x66? rexw? 0xaa",
+          "repnz scas" : "0x66? 0xf2 rexw? 0xaa",
+          "rep scas" : "0x66? 0xf3 rexw? 0xaa"
+        }
+      },
+      {
+        "arguments" : ["DI:Memory8", "SI:Memory8"],
+        "names" : {
+          "movs" : "0x66? rexw? 0xa4",
+          "repnz movs" : "0x66? 0xf2 rexw? 0xa4",
+          "rep movs" : "0x66? 0xf3 rexw? 0xa4"
+        }
+      },
+      {
+        "arguments" : ["DI:MemoryNative", "AX:GPRegisterNative"],
+        "names" : {
+          "stos" : "0xab",
+          "repnz scas" : "0xf2 0xab",
+          "rep scas" : "0xf3 0xab"
+        }
+      },
+      {
+        "arguments" : ["DI:MemoryNative", "SI:MemoryNative"],
+        "names" : {
+          "movs" : "0xa5",
+          "repnz movs" : "0xf2 0xa5",
+          "rep movs" : "0xf3 0xa5"
         }
       },
       {
@@ -541,6 +605,22 @@
         "arguments" : ["Rm:Memory16", "Reg:SegmentRegister"],
         "names" : {
           "mov" : "0x66? 0xf2? 0xf3? rexw? 0x8e /m"
+        }
+      },
+      {
+        "arguments" : ["SI:Memory8", "DI:Memory8"],
+        "names" : {
+          "cmps" : "0x66? rexw? 0xa6",
+          "repnz cmps" : "0x66? 0xf2 rexw? 0xa6",
+          "repz cmps" : "0x66? 0xf3 rexw? 0xa6"
+        }
+      },
+      {
+        "arguments" : ["SI:MemoryNative", "DI:MemoryNative"],
+        "names" : {
+          "cmps" : "0xa7",
+          "repnz cmps" : "0xf2 0xa7",
+          "repz cmps" : "0xf3 0xa7"
         }
       }
     ]

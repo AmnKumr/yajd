@@ -698,6 +698,17 @@ ${{"a":"Condition.Above",
     </#list>
     <#return false>
 </#function>
+<#macro implicit_address type reg16bit reg32bit reg64bit segment instruction>
+    <#list instruction.arguments as argument>
+        <#if argument?starts_with(type + "GPAddress16")
+            >new GPAddress16(${segment}, null, GPRegister16.${reg16bit}, (short)0)<#elseif
+        argument?starts_with(type + "GPAddress32")
+            >new GPAddress32(${segment}, null, GPRegister32.${reg32bit}, ScaleFactor.X1, 0)<#elseif
+        argument?starts_with(type + "GPAddress64")
+            >new GPAddress64(${segment}, null, GPRegister64.${reg64bit}, ScaleFactor.X1, 0)</#if
+        ></#list
+    ></#macro
+>
 <#macro implicit_argument type reg8bit reg16bit reg32bit reg64bit instruction>
     <#list instruction.arguments as argument>
         <#if argument?starts_with(type)
@@ -817,8 +828,14 @@ ${indent}var implicit_argument_ax = <@implicit_argument "AX:" "AL" "AX" "EAX" "R
     <#if has_implicit_argument("CX:", instruction)>
 ${indent}var implicit_argument_cx = <@implicit_argument "CX:" "CL" "CX" "ECX" "RCX" instruction/>;
     </#if>
+    <#if has_implicit_argument("DI:", instruction)>
+${indent}var implicit_address_di = <@implicit_address "DI:" "DI" "EDI" "RDI" "final_segment" instruction/>;
+    </#if>
     <#if has_implicit_argument("DX:", instruction)>
 ${indent}var implicit_argument_dx = <@implicit_argument "DX:" "DL" "DX" "EDX" "RDX" instruction/>;
+    </#if>
+    <#if has_implicit_argument("SI:", instruction)>
+${indent}var implicit_address_si = <@implicit_address "SI:" "SI" "ESI" "RSI" "SegmentRegister.ES" instruction/>;
     </#if>
     <#if has_immediate_argument0(instruction)>
 ${indent}var immediate_argument0 = <@immediate_argument0 instruction/>;
@@ -840,12 +857,14 @@ Optional.of(new ${instruction.name}(<#list instruction.arguments as argument
         >new ${argument?keep_after(":")}(immediate_argument0.get())<#else
         >${{"AX": "implicit_argument_ax",
             "CX": "implicit_argument_cx",
+            "DI": "implicit_address_di",
             "DX": "implicit_argument_dx",
             "Imm0": "immediate_argument0.get()",
             "Imm1": "immediate_argument1.get()",
             "Op": "opcode_argument",
             "Reg": "reg_argument",
-            "Rm" : "rm_argument"}[argument?keep_before(":")]}</#if
+            "Rm" : "rm_argument",
+            "SI": "implicit_address_si"}[argument?keep_before(":")]}</#if
         >, </#list
     >toPrimitive(deque.toArray(empty_byte_array))))</#macro
 >
