@@ -148,6 +148,12 @@
         }
       },
       {
+        "arguments" : ["AX:GPRegister8", "BX:Memory8"],
+        "names" : {
+          "xlat" : "0x66? 0xf2? 0xf3? rexw? 0xd7"
+        }
+      },
+      {
         "arguments" : ["AX:GPRegister8", "DI:Memory8"],
         "names" : {
           "scas" : "0x66? rexw? 0xae",

@@ -825,6 +825,9 @@ ${indent}var immediate_address = new AbsoluteAddress64(final_segment, immediate_
     <#if has_implicit_argument("AX:", instruction)>
 ${indent}var implicit_argument_ax = <@implicit_argument "AX:" "AL" "AX" "EAX" "RAX" instruction/>;
     </#if>
+    <#if has_implicit_argument("BX:", instruction)>
+        ${indent}var implicit_address_bx = <@implicit_address "BX:" "BX" "EBX" "RBX" "final_segment" instruction/>;
+    </#if>
     <#if has_implicit_argument("CX:", instruction)>
 ${indent}var implicit_argument_cx = <@implicit_argument "CX:" "CL" "CX" "ECX" "RCX" instruction/>;
     </#if>
@@ -856,6 +859,7 @@ Optional.of(new ${instruction.name}(<#list instruction.arguments as argument
             argument?starts_with("Imm0:") && argument?contains("Rel")
         >new ${argument?keep_after(":")}(immediate_argument0.get())<#else
         >${{"AX": "implicit_argument_ax",
+            "BX": "implicit_address_bx",
             "CX": "implicit_argument_cx",
             "DI": "implicit_address_di",
             "DX": "implicit_argument_dx",
