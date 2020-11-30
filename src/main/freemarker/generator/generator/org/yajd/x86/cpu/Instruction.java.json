@@ -421,10 +421,28 @@
         }
       },
       {
+        "arguments" : ["Op:GPRegister16"],
+        "names" : {
+          "pop/x64" : "0x66 0x67? 0xf2? 0xf3? 0x58",
+          "push/x64" : "0x66 0x67? 0xf2? 0xf3? 0x50"
+        }
+      },
+      {
+        "arguments" : ["Op:GPRegister64"],
+        "names" : {
+          "pop" : "||0x67? 0xf2? 0xf3? 0x58",
+          "pop/x64" : "0x66? 0x67? 0xf2? 0xf3? rexw 0x58",
+          "push" : "||0x67? 0xf2? 0xf3? 0x50",
+          "push/x64" : "0x66? 0x67? 0xf2? 0xf3? rexw 0x50"
+        }
+      },
+      {
         "arguments" : ["Op:GPRegisterNative"],
         "names" : {
           "dec/x32" : "0x67? 0xf2? 0xf3? 0x48",
-          "inc/x32" : "0x67? 0xf2? 0xf3? 0x40"
+          "inc/x32" : "0x67? 0xf2? 0xf3? 0x40",
+          "pop/x32" : "0x67? 0xf2? 0xf3? 0x58",
+          "push/x32" : "0x67? 0xf2? 0xf3? 0x50"
         }
       },
       {
@@ -549,6 +567,22 @@
         }
       },
       {
+        "arguments" : ["Rm:GPRegister16/Memory16"],
+        "names" : {
+          "pop/x64" : "0x66 0xf2? 0xf3? 0x8f /0",
+          "push/x64" : "0x66 0xf2? 0xf3? 0xff /6"
+        }
+      },
+      {
+        "arguments" : ["Rm:GPRegister64/x64Memory"],
+        "names" : {
+          "pop" : "||0xf2? 0xf3? 0x8f /0",
+          "pop/x64" : "0x66? 0xf2? 0xf3? rexw 0x8f /0",
+          "push" : "||0xf2? 0xf3? 0xff /6",
+          "push/x64" : "0x66? 0xf2? 0xf3? rexw 0xff /6"
+        }
+      },
+      {
         "arguments" : ["Rm:GPRegisterNative/MemoryNative"],
         "names" : {
           "dec" : "0xf2? 0xf3? 0xff /1",
@@ -559,6 +593,8 @@
           "mul" : "0xf2? 0xf3? 0xf7 /4",
           "neg" : "0xf2? 0xf3? 0xf7 /3",
           "not" : "0xf2? 0xf3? 0xf7 /2",
+          "pop/x32" : "0xf2? 0xf3? 0x8f /0",
+          "push/x32" : "0xf2? 0xf3? 0xff /6",
           "rcl" : "0xf2? 0xf3? 0xd1 /2",
           "rcr" : "0xf2? 0xf3? 0xd1 /3",
           "rol" : "0xf2? 0xf3? 0xd1 /0",

@@ -120,6 +120,11 @@
     <#else>
         <#if names[keys[0]]?contains("|")>
             <#local opcodes = names[keys[0]]?split("|")>
+            <#if opcodes?size == 2>
+                <#local opcodes = [opcodes[0], opcodes[1], opcodes[0], opcodes[1], opcodes[0]]>
+            <#elseif opcodes?size == 3>
+                <#local opcodes = [opcodes[0], opcodes[0], opcodes[1], opcodes[1], opcodes[2]]>
+            </#if>
         <#else>
             <#local opcodes = [names[keys[0]], names[keys[0]], names[keys[0]], names[keys[0]], names[keys[0]]]>
         </#if>
@@ -342,7 +347,7 @@
 <#function memory_register_operand arguments>
     <#list arguments as argument>
         <#if element_in_list(argument?keep_after(":"),
-                             ["GPRegister8/Memory8", "GPRegisterNative/MemoryNative"])>
+                             ["GPRegister8/Memory8", "GPRegister16/Memory16", "GPRegister32/Memory32", "GPRegister64/x64Memory", "GPRegisterNative/MemoryNative"])>
             <#return true>
         </#if>
     </#list>
@@ -380,16 +385,16 @@
                     [instructions[0] + {
                         "arguments": replace_arguments(
                             instructions[0].arguments,
-                            ["GPRegister8/Memory8", "GPRegisterNative/MemoryNative"],
-                            ["GPRegister8", "GPRegisterNative"]),
+                            ["GPRegister8/Memory8", "GPRegister16/Memory16", "GPRegister32/Memory32", "GPRegister64/x64Memory", "GPRegisterNative/MemoryNative"],
+                            ["GPRegister8", "GPRegister16", "GPRegister32", "GPRegister64", "GPRegisterNative"]),
                         "names": instructions[0].names + regmem_opcodes(
                             instructions[0].names?keys,
                             instructions[0].names, "/r")}] +
                     [instructions[0] + {
                         "arguments": replace_arguments(
                             instructions[0].arguments,
-                            ["GPRegister8/Memory8", "GPRegisterNative/MemoryNative"],
-                            ["Memory8", "MemoryNative"]),
+                            ["GPRegister8/Memory8", "GPRegister16/Memory16", "GPRegister32/Memory32", "GPRegister64/x64Memory", "GPRegisterNative/MemoryNative"],
+                            ["Memory8", "Memory16", "Memory32", "x64Memory", "MemoryNative"]),
                         "names": instructions[0].names + regmem_opcodes(
                             instructions[0].names?keys,
                             instructions[0].names, "/m")}]) +
@@ -1359,7 +1364,7 @@ ${indеnt[0..<indеnt?length-4]}case 0b00_${{"/0": "000",
                     <#else>
 ${indеnt}var reg_argument = <@reg_argument instruction "it.peek()" "final_rex_prefix"/>;
                     </#if>
-                    <#if suffix == " /m" && 1 < mode && element_in_list(4, modes)>
+                    <#if suffix == " /m" && 1 < mode && element_in_list(4, active_modes)>
 ${indеnt}if (mode == Mode.ADDR64_DATA32 && (it.peek() & 0b11_000_111) == 0b00_000_101) {
 ${indеnt}    it.next();
 ${indеnt}    var parse_result = parseInteger(it);
@@ -1501,7 +1506,7 @@ ${indent}if (final_x67_prefix) {
 ${indent}} else {
                     </#if>
                 </#if>
-                <#if prefix_is_affecting_encoding(norexw_modes, opcode, "0x66", x67_prefixes[0], f2f3_prefixes[1])>
+                <#if prefix_is_affecting_encoding(norexw_modes, opcode, "0x66", x67_prefixes[0], x67_prefixes[1])>
                     <#if prefix_is_affecting_encoding(norexw_modes, opcode, "oprd", x67_prefixes[0], x67_prefixes[1])>
                         <#local x66_prefix_flavor = "selector">
                     <#else>
@@ -1850,7 +1855,14 @@ public interface Instruction {
         <#list ["", "0x66 ", "0x67 ", "0x66 0x67 ",
                 "0xf2 ", "0x66 0xf2 ", "0x67 0xf2 ", "0x66 0x67 0xf2 ",
                 "0xf3 ", "0x66 0xf3 ", "0x67 0xf3 ", "0x66 0x67 0xf3 "] as opcode_prefix>
-            <#list ["", " /r", " /m"] as opcode_suffix>
+            <#assign suffix_list = [""]>
+            <#list [ADDR16_DATA32, ADDR16_DATA16, ADDR32_DATA32, ADDR32_DATA16, ADDR64_DATA32] as anymap>
+                <#if prefix_opcode_maps[anymap][opcode_prefix + "0x" + opcode_value]??>
+                    <#assign suffix_list = suffix_list + prefix_opcode_maps[anymap][opcode_prefix + "0x" + opcode_value]>
+                </#if>
+            </#list>
+            <#assign suffix_list = sort_and_remove_duplicates(suffix_list)>
+            <#list suffix_list as opcode_suffix>
                 <#if opcode_maps[map][opcode_prefix + "0x" + opcode_value + opcode_suffix]??>
                     <#if opcode_suffix == "">
                         <#assign valid_opcode_x32 = true>
