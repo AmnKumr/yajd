@@ -316,6 +316,27 @@
         }
       },
       {
+        "arguments" : ["CS:SegmentRegister"],
+        "names" : {
+          "pop/x32" : "0x66? 0x67? 0xf2? 0xf3? 0x0f",
+          "push/x32" : "0x66? 0x67? 0xf2? 0xf3? 0x0e"
+        }
+      },
+      {
+        "arguments" : ["DS:SegmentRegister"],
+        "names" : {
+          "pop/x32" : "0x66? 0x67? 0xf2? 0xf3? 0x1f",
+          "push/x32" : "0x66? 0x67? 0xf2? 0xf3? 0x1e"
+        }
+      },
+      {
+        "arguments" : ["ES:SegmentRegister"],
+        "names" : {
+          "pop/x32" : "0x66? 0x67? 0xf2? 0xf3? 0x07",
+          "push/x32" : "0x66? 0x67? 0xf2? 0xf3? 0x06"
+        }
+      },
+      {
         "arguments" : ["Imm0:AbsMemory8", "AX:GPRegister8"],
         "names" : {
           "mov" : "0x66? 0xf2? 0xf3? rexw? 0xa2"
@@ -627,6 +648,13 @@
           "cmps" : "0xa7",
           "repnz cmps" : "0xf2 0xa7",
           "repz cmps" : "0xf3 0xa7"
+        }
+      },
+      {
+        "arguments" : ["SS:SegmentRegister"],
+        "names" : {
+          "pop/x32" : "0x66? 0x67? 0xf2? 0xf3? 0x17",
+          "push/x32" : "0x66? 0x67? 0xf2? 0xf3? 0x16"
         }
       }
     ]
