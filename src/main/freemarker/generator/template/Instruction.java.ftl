@@ -98,6 +98,15 @@
     </#list>
     <#return false>
 </#function>
+<#function far_address_operand arguments>
+    <#list arguments as argument>
+        <#if element_in_list(argument?keep_after(":"),
+                             ["Memory16Memory16", "Memory16Memory32"])>
+            <#return true>
+        </#if>
+    </#list>
+    <#return false>
+</#function>
 <#function rm_register_operand arguments>
     <#list arguments as argument>
         <#if element_in_list(argument, ["Rm:GPRegister8", "Rm:GPRegister16", "Rm:GPRegister32", "Rm:GPRegister64"])>
@@ -207,8 +216,8 @@
                     "SKIP", "SKIP", "0x67 /p")}] +
                 [instructions[0] + {"arguments": replace_arguments(
                     instructions[0].arguments,
-                    ["Memory0", "Memory8", "Memory16", "Memory32", "x64Memory"],
-                    ["GPAddress32/0", "GPAddress32/8", "GPAddress32/16", "GPAddress32/32", "GPAddress32/64"]),
+                    ["Memory0", "Memory8", "Memory16Memory16", "Memory16Memory32", "Memory16", "Memory32", "x64Memory"],
+                    ["GPAddress32/0", "GPAddress32/8", "GPAddress32/16+16", "GPAddress32/16+32", "GPAddress32/16", "GPAddress32/32", "GPAddress32/64"]),
                 "names": instructions[0].names + split_opcodes_by_address_size(
                     instructions[0].names?keys,
                     instructions[0].names,
@@ -217,13 +226,32 @@
                 <#local result = result +
                     [instructions[0] + {"arguments": replace_arguments(
                         instructions[0].arguments,
-                        ["Memory0", "Memory8", "Memory16", "Memory32"],
-                        ["GPAddress16/0", "GPAddress16/8", "GPAddress16/16", "GPAddress16/32"]),
+                        ["Memory0", "Memory8", "Memory16Memory16", "Memory16Memory32", "Memory16", "Memory32"],
+                        ["GPAddress16/0", "GPAddress16/8", "GPAddress16/16+16", "GPAddress16/16+32", "GPAddress16/16", "GPAddress16/32"]),
                     "names": instructions[0].names + split_opcodes_by_address_size(
                         instructions[0].names?keys,
                         instructions[0].names,
                         "", "0x67", "SKIP")}]>
             </#if>
+            <#return result + expand_address_arguments(instructions[1..])>
+        <#elseif far_address_operand(instructions[0].arguments)>
+            <#local result =
+                [instructions[0] + {"arguments": replace_arguments(
+                    instructions[0].arguments,
+                    ["Memory16Memory16", "Memory16Memory32"],
+                    ["GPAddress32/16+16", "GPAddress32/16+32"]),
+                "names": instructions[0].names + split_opcodes_by_address_size(
+                    instructions[0].names?keys,
+                    instructions[0].names,
+                    "0x67", "", "SKIP")}] +
+                [instructions[0] + {"arguments": replace_arguments(
+                    instructions[0].arguments,
+                    ["Memory16Memory16", "Memory16Memory32"],
+                    ["GPAddress16/16+16", "GPAddress16/16+32"]),
+                "names": instructions[0].names + split_opcodes_by_address_size(
+                    instructions[0].names?keys,
+                    instructions[0].names,
+                    "", "0x67", "SKIP")}]>
             <#return result + expand_address_arguments(instructions[1..])>
         <#elseif absolute_address_operand(instructions[0].arguments)>
             <#local result =
@@ -257,9 +285,9 @@
             <#return result + expand_address_arguments(instructions[1..])>
         <#elseif rm_register_operand(instructions[0].arguments)>
             <#return [instructions[0] + {"names": split_opcodes_by_address_size(
-                                             instructions[0].names?keys,
-                                             instructions[0].names,
-                                             "0x67", "0x67", "0x67")}] +
+                                                      instructions[0].names?keys,
+                                                      instructions[0].names,
+                                                      "0x67", "0x67", "0x67")}] +
                      instructions[0..0] + expand_address_arguments(instructions[1..])>
         <#else>
             <#return instructions[0..0] + expand_address_arguments(instructions[1..])>
@@ -448,9 +476,9 @@
 </#function>
 <#function classname name arguments>
     <#local result>${
-        name?keep_before("/")?capitalize?replace(" ", "")}<#list arguments as argument>${
+        name?keep_before("/")?capitalize?replace(" ", "")}<#list arguments as argument><#if argument_to_class_name[argument?keep_after(":")]??>${
         argument_to_class_name[argument?keep_after(":")]
-    }</#list></#local>
+    }<#else>QQX${argument?keep_after(":")}X</#if></#list></#local>
     <#return result>
 </#function>
 <#function operand_in_opcode arguments>
@@ -934,10 +962,17 @@ ${indent}}
                       replace("Addr16", "Addr32")>
          </#if>
      <#elseif prefix_under_test == "oprd">
-         <#if instruction_name?contains("Reg32") || instruction_name?contains("Mem32")>
-             <#return instruction_name?replace("Reg32", "Reg16")?replace("Mem32", "Mem16")?replace("Imm32", "Imm16")>
+         <#if instruction_name?contains("Reg32") || instruction_name?contains("Mem32") || instruction_name?contains("Imm16Imm32")>
+             <#return instruction_name?
+                      replace("Reg32", "Reg16")?
+                      replace("Mem32", "Mem16")?
+                      replace("Imm32", "Imm16")>
          <#else>
-             <#return instruction_name?replace("Reg16", "Reg32")?replace("Mem16", "Mem32")?replace("Imm16", "Imm32")>
+             <#return instruction_name?
+                      replace("Reg16", "Reg32")?
+                      replace("Mem16", "Mem32")?
+                      replace("Imm16", "Imm32")?
+                      replace("Imm32Imm32", "Imm16Imm32")>
          </#if>
      <#else>
          <#return instruction_name>
@@ -976,6 +1011,13 @@ ${indent}}
             <#return [instruction_arguments[0]?replace(":Imm32", ":Imm16")] +
                      adjust_instruction_arguments(prefix_under_test, instruction_arguments[1..])>
         <#elseif instruction_arguments[0]?ends_with(":Imm16")>
+            <#if 1 < instruction_arguments?size && instruction_arguments[1]?ends_with(":Imm32")>
+                <#return instruction_arguments[0..0] + [instruction_arguments[1]?replace(":Imm32", ":Imm16")] +
+                         adjust_instruction_arguments(prefix_under_test, instruction_arguments[2..])>
+            <#elseif 1 < instruction_arguments?size && instruction_arguments[1]?ends_with(":Imm16")>
+                <#return instruction_arguments[0..0] + [instruction_arguments[1]?replace(":Imm16", ":Imm32")] +
+                adjust_instruction_arguments(prefix_under_test, instruction_arguments[2..])>
+            </#if>
             <#return [instruction_arguments[0]?replace(":Imm16", ":Imm32")] +
                      adjust_instruction_arguments(prefix_under_test, instruction_arguments[1..])>
         <#else>
@@ -1678,7 +1720,7 @@ public interface Instruction {
         <#list instruction_class.arguments as argument>
             <#if argument?contains("/")>
             this.arg${argument?index} = new ${argumeng_name_to_type_name[argument?keep_after(":")]}(arg${
-                argument?index}, (short)${argument?keep_after("/")});
+                argument?index}, (short)(${argument?keep_after("/")}));
             <#else>
             this.arg${argument?index} = arg${argument?index};
             </#if>

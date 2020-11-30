@@ -31,11 +31,15 @@
       "GPAddress16/0" : "Addr16",
       "GPAddress16/8" : "Addr16Mem8",
       "GPAddress16/16" : "Addr16Mem16",
+      "GPAddress16/16+16" : "Addr16Mem16Mem16",
+      "GPAddress16/16+32" : "Addr16Mem16Mem32",
       "GPAddress16/32" : "Addr16Mem32",
       "GPAddress16/64" : "Addr16Mem64",
       "GPAddress32/0" : "Addr32",
       "GPAddress32/8" : "Addr32Mem8",
       "GPAddress32/16" : "Addr32Mem16",
+      "GPAddress32/16+16" : "Addr32Mem16Mem16",
+      "GPAddress32/16+32" : "Addr32Mem16Mem32",
       "GPAddress32/32" : "Addr32Mem32",
       "GPAddress32/64" : "Addr32Mem64",
       "EIPAddress32/0" : "EIPAddr32",
@@ -75,11 +79,15 @@
       "GPAddress16/0" : "GPAddress16",
       "GPAddress16/8" : "GPAddress16",
       "GPAddress16/16" : "GPAddress16",
+      "GPAddress16/16+16" : "GPAddress16",
+      "GPAddress16/16+32" : "GPAddress16",
       "GPAddress16/32" : "GPAddress16",
       "GPAddress16/64" : "GPAddress16",
       "GPAddress32/0" : "GPAddress32",
       "GPAddress32/8" : "GPAddress32",
       "GPAddress32/16" : "GPAddress32",
+      "GPAddress32/16+16" : "GPAddress32",
+      "GPAddress32/16+32" : "GPAddress32",
       "GPAddress32/32" : "GPAddress32",
       "GPAddress32/64" : "GPAddress32",
       "EIPAddress32/0" : "EIPAddress32",
@@ -376,6 +384,20 @@
         }
       },
       {
+        "arguments" : ["Imm0:Imm16", "Imm1:Imm16"],
+        "names" : {
+          "call/x32" : "0x66 0x67? 0xf2? 0xf3? 0x9a|0x67? 0xf2? 0xf3? 0x9a",
+          "jmp/x32" : "0x66 0x67? 0xf2? 0xf3? 0xea|0x67? 0xf2? 0xf3? 0xea"
+        }
+      },
+      {
+        "arguments" : ["Imm0:Imm16", "Imm1:Imm32"],
+        "names" : {
+          "call/x32" : "0x67? 0xf2? 0xf3? 0x9a|0x66 0x67? 0xf2? 0xf3? 0x9a",
+          "jmp/x32" : "0x67? 0xf2? 0xf3? 0xea|0x66 0x67? 0xf2? 0xf3? 0xea"
+        }
+      },
+      {
         "arguments" : ["Imm0:Rel8"],
         "names" : {
           "ja" : "0x66? 0x67? 0xf2? 0xf3? rexw? 0x77",
@@ -569,6 +591,7 @@
       {
         "arguments" : ["Rm:GPRegister16/Memory16"],
         "names" : {
+          "call/x64" : "0x66 0xf2? 0xf3? 0xff /2",
           "pop/x64" : "0x66 0xf2? 0xf3? 0x8f /0",
           "push/x64" : "0x66 0xf2? 0xf3? 0xff /6"
         }
@@ -576,6 +599,8 @@
       {
         "arguments" : ["Rm:GPRegister64/x64Memory"],
         "names" : {
+          "call" : "||0xf2? 0xf3? 0xff /2",
+          "call/x64" : "0x66? 0xf2? 0xf3? rexw 0xff /2",
           "pop" : "||0xf2? 0xf3? 0x8f /0",
           "pop/x64" : "0x66? 0xf2? 0xf3? rexw 0x8f /0",
           "push" : "||0xf2? 0xf3? 0xff /6",
@@ -590,6 +615,7 @@
           "idiv" : "0xf2? 0xf3? 0xf7 /7",
           "imul" : "0xf2? 0xf3? 0xf7 /5",
           "inc" : "0xf2? 0xf3? 0xff /0",
+          "call/x32" : "0xf2? 0xf3? 0xff /2",
           "mul" : "0xf2? 0xf3? 0xf7 /4",
           "neg" : "0xf2? 0xf3? 0xf7 /3",
           "not" : "0xf2? 0xf3? 0xf7 /2",
@@ -668,6 +694,20 @@
         "arguments" : ["Rm:Memory16", "Reg:SegmentRegister"],
         "names" : {
           "mov" : "0x66? 0xf2? 0xf3? rexw? 0x8e /m"
+        }
+      },
+      {
+        "arguments" : ["Rm:Memory16Memory16"],
+        "names" : {
+          "call/x32" : "0x66 0xf2? 0xf3? 0xff /m /3|0xf2? 0xf3? 0xff /m /3",
+          "jmp/x32" : "0x66 0xf2? 0xf3? 0xff /m /5|0xf2? 0xf3? 0xff /m /5"
+        }
+      },
+      {
+        "arguments" : ["Rm:Memory16Memory32"],
+        "names" : {
+          "call/x32" : "0xf2? 0xf3? 0xff /m /3|0x66 0xf2? 0xf3? 0xff /m /3",
+          "jmp/x32" : "0xf2? 0xf3? 0xff /m /5|0x66 0xf2? 0xf3? 0xff /m /5"
         }
       },
       {
