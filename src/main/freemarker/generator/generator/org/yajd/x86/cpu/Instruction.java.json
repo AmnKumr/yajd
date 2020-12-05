@@ -508,6 +508,21 @@
         }
       },
       {
+        "arguments" : ["Reg:GPRegister16", "Rm:Memory16Memory16"],
+        "names" : {
+          "lds/x32" : "0x66 0xf2? 0xf3? 0xc5 /m|0xf2? 0xf3? 0xc5 /m",
+          "les/x32" : "0x66 0xf2? 0xf3? 0xc4 /m|0xf2? 0xf3? 0xc4 /m"
+        }
+      },
+      {
+        "arguments" : ["Reg:GPRegister32", "Rm:Memory16Memory32"],
+        "names" : {
+          "lds/x32" : "0xf2? 0xf3? 0xc5 /m|0x66 0xf2? 0xf3? 0xc5 /m",
+          "les/x32" : "0xf2? 0xf3? 0xc4 /m|0x66 0xf2? 0xf3? 0xc4 /m"
+        }
+      },
+
+      {
         "arguments" : ["Reg:SegmentRegister", "Rm:Memory16"],
         "names" : {
           "mov" : "0x66? 0xf2? 0xf3? rexw? 0x8c /m"
