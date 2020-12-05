@@ -384,6 +384,13 @@
         }
       },
       {
+        "arguments" : ["Imm0:Imm16"],
+        "names" : {
+          "ret" : "0x66? 0x67? 0xf2? 0xf3? rexw? 0xc2",
+          "ret far" : "0x66? 0x67? 0xf2? 0xf3? rexw? 0xca"
+        }
+      },
+      {
         "arguments" : ["Imm0:Imm16", "Imm1:Imm16"],
         "names" : {
           "call/x32" : "0x66 0x67? 0xf2? 0xf3? 0x9a|0x67? 0xf2? 0xf3? 0x9a",
