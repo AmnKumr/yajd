@@ -1635,6 +1635,9 @@ public interface Instruction {
     @NotNull String getName();
 
     @Contract(pure = true)
+    @NotNull byte[] getBytes();
+
+    @Contract(pure = true)
     @NotNull Argument[] getArguments();
 
     <Type> Type process(@NotNull Result<Type> result);
@@ -1688,7 +1691,7 @@ public interface Instruction {
 
         @Contract(pure = true)
         public @NotNull String getName() {
-            return "BAD";
+            return "(bad)";
         }
 
         @Contract(pure = true)
@@ -1696,7 +1699,7 @@ public interface Instruction {
             return new Argument[0];
         }
 
-        byte[] getBytes() {
+        public @NotNull byte[] getBytes() {
             return bytes;
         }
     }
@@ -1751,7 +1754,7 @@ public interface Instruction {
         }
 
         </#list>
-        byte[] getBytes() {
+        public @NotNull byte[] getBytes() {
             return bytes;
         }
     }
