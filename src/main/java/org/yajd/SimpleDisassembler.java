@@ -110,7 +110,7 @@ public class SimpleDisassembler {
                 Option
                         .builder("S")
                         .longOpt("start-address")
-                        .desc("start-addredd: default is 0x100 (as for COM file)")
+                        .desc("start-address: default is 0x100 (as for COM file)")
                         .hasArg()
                         .argName("START_ADDRESS")
                         .build());
@@ -153,8 +153,13 @@ public class SimpleDisassembler {
                 }
             }
 
-            for (var file_name : command_line.getArgs()) {
-                disassembleFile(start_address, mode, file_name);
+            var files = command_line.getArgs();
+            if (files.length == 0) {
+                help(options);
+            } else {
+                for (var file_name : files) {
+                    disassembleFile(start_address, mode, file_name);
+                }
             }
         } catch (ParseException | IOException exp) {
             System.err.println(exp.getMessage());
