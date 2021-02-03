@@ -20,7 +20,6 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.codehaus.plexus.util.cli.Arg;
 import org.jetbrains.annotations.NotNull;
 import org.yajd.x86.cpu.Argument;
 import org.yajd.x86.cpu.GPAddress16;
@@ -41,6 +40,8 @@ import org.yajd.x86.cpu.SegmentRegister;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -48,39 +49,19 @@ import java.util.Optional;
 
 public class SimpleDisassembler {
     public static void disassembleFile(long start_address, Instruction.Mode mode, String file_name) throws IOException {
-        var file = new FileInputStream(file_name);
+        byte[] data = Files.readAllBytes(Paths.get(file_name));
+
         var iterator = new Iterator<Byte>() {
-            int next_byte = -1;
+            int position = 0;
 
             @Override
             public boolean hasNext() {
-                if (next_byte != -1) {
-                    return true;
-                }
-                try {
-                    next_byte = file.read();
-                } catch (IOException e) {
-                    throw new NoSuchElementException();
-                }
-                return next_byte != -1;
+                return position < data.length;
             }
 
             @Override
             public Byte next() {
-                if (next_byte != -1) {
-                    var saved_byte = next_byte;
-                    next_byte = -1;
-                    return (byte) saved_byte;
-                }
-                try {
-                    var new_byte = file.read();
-                    if (new_byte == -1) {
-                        throw new NoSuchElementException();
-                    }
-                    return (byte) new_byte;
-                } catch (IOException e) {
-                    throw new NoSuchElementException();
-                }
+                return data[position++];
             }
         };
         long position = start_address;
@@ -90,7 +71,6 @@ public class SimpleDisassembler {
             System.out.printf("%s\n", InstructionToString(instruction, position));
             position += instruction.getBytes().length;
         }
-        file.close();
     }
 
     public static String InstructionToString(@NotNull Instruction instruction, long position) {
