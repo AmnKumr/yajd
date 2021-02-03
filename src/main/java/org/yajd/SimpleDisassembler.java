@@ -23,6 +23,10 @@ import org.apache.commons.cli.ParseException;
 import org.codehaus.plexus.util.cli.Arg;
 import org.jetbrains.annotations.NotNull;
 import org.yajd.x86.cpu.Argument;
+import org.yajd.x86.cpu.GPRegister16;
+import org.yajd.x86.cpu.GPRegister32;
+import org.yajd.x86.cpu.GPRegister64;
+import org.yajd.x86.cpu.GPRegister8;
 import org.yajd.x86.cpu.Imm16;
 import org.yajd.x86.cpu.Imm32;
 import org.yajd.x86.cpu.Imm64;
@@ -32,6 +36,7 @@ import org.yajd.x86.cpu.InstructionIterator;
 import org.yajd.x86.cpu.Rel16;
 import org.yajd.x86.cpu.Rel32;
 import org.yajd.x86.cpu.Rel8;
+import org.yajd.x86.cpu.SegmentRegister;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -138,6 +143,31 @@ public class SimpleDisassembler {
                     @Override
                     public String when(@NotNull Rel32 rel32) {
                         return String.format("0x%x", (position + instruction.getBytes().length + rel32.getValue()) % 0x100000000L);
+                    }
+
+                    @Override
+                    public String when(@NotNull GPRegister8 register) {
+                        return register.getName();
+                    }
+
+                    @Override
+                    public String when(@NotNull GPRegister16 register) {
+                        return register.getName();
+                    }
+
+                    @Override
+                    public String when(@NotNull GPRegister32 register) {
+                        return register.getName();
+                    }
+
+                    @Override
+                    public String when(@NotNull GPRegister64 register) {
+                        return register.getName();
+                    }
+
+                    @Override
+                    public String when(@NotNull SegmentRegister register) {
+                        return register.getName();
                     }
                 });
             }
