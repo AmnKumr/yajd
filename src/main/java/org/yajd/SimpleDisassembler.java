@@ -21,6 +21,7 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.jetbrains.annotations.NotNull;
+import org.yajd.x86.cpu.Argument;
 import org.yajd.x86.cpu.Instruction;
 import org.yajd.x86.cpu.InstructionIterator;
 
@@ -84,10 +85,18 @@ public class SimpleDisassembler {
             result.append(String.format("%02x ", current_byte));
             bytes_left--;
         }
-        for (int byte_count = 0; byte_count <= bytes_left; byte_count++) {
-            result.append("   ");
+        result.append("   ".repeat(Math.max(0, bytes_left + 1)));
+        Argument[] arguments = instruction.getArguments();
+        if (arguments.length > 0) {
+            result.append(String.format("%-8s", instruction.getName()));
+            String[] arguments_text = new String[arguments.length];
+            for (int i = 0; i < arguments.length; ++i) {
+                arguments_text[i] = arguments[i].toString();
+            }
+            result.append(String.join(", ", arguments_text));
+        } else {
+            result.append(instruction.getName());
         }
-        result.append(instruction.getName());
         return result.toString();
     }
 
