@@ -20,11 +20,25 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.codehaus.plexus.util.cli.Arg;
+import org.jetbrains.annotations.NotNull;
+import org.yajd.x86.cpu.Argument;
+import org.yajd.x86.cpu.GPRegister16;
+import org.yajd.x86.cpu.GPRegister32;
+import org.yajd.x86.cpu.GPRegister64;
+import org.yajd.x86.cpu.GPRegister8;
+import org.yajd.x86.cpu.Imm16;
+import org.yajd.x86.cpu.Imm32;
+import org.yajd.x86.cpu.Imm64;
+import org.yajd.x86.cpu.Imm8;
 import org.yajd.x86.cpu.Instruction;
 import org.yajd.x86.cpu.InstructionIterator;
+import org.yajd.x86.cpu.Rel16;
+import org.yajd.x86.cpu.Rel32;
+import org.yajd.x86.cpu.Rel8;
+import org.yajd.x86.cpu.SegmentRegister;
 
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -70,19 +84,98 @@ public class SimpleDisassembler {
         var instruction_iterator = new InstructionIterator(mode, iterator);
         while (instruction_iterator.hasNext()) {
             var instruction = instruction_iterator.next();
-            int bytes_left = 8;
-            System.out.printf("%4x   ", position);
-            for (var current_byte : instruction.getBytes()) {
-                System.out.printf("%02x ", current_byte);
-                bytes_left--;
-                position++;
-            }
-            for (int byte_count = 0; byte_count <= bytes_left; byte_count++) {
-                System.out.print("   ");
-            }
-            System.out.printf("%s\n", instruction.getName());
+            System.out.printf("%s\n", InstructionToString(instruction, position));
+            position += instruction.getBytes().length;
         }
         file.close();
+    }
+
+    public static String InstructionToString(@NotNull Instruction instruction, long position) {
+        StringBuilder result = new StringBuilder(String.format("%4x  ", position));
+        int bytes_left = 8;
+        System.out.printf("%4x   ", position);
+        for (var current_byte : instruction.getBytes()) {
+            result.append(String.format("%02x ", current_byte));
+            bytes_left--;
+        }
+        result.append("   ".repeat(Math.max(0, bytes_left + 1)));
+        Argument[] arguments = instruction.getArguments();
+        if (arguments.length > 0) {
+            result.append(String.format("%-8s", instruction.getName()));
+            String[] arguments_text = new String[arguments.length];
+            for (int i = 0; i < arguments.length; ++i) {
+                arguments_text[i] = arguments[i].process(new Argument.Result<String>() {
+                    @Override
+                    public String when(@NotNull Argument argument) {
+                        return argument.toString();
+                    }
+
+                    @Override
+                    public String when(@NotNull Imm8 imm8) {
+                        return String.format("0x%x", imm8.getValue());
+                    }
+
+                    @Override
+                    public String when(@NotNull Imm16 imm16) {
+                        return String.format("0x%x", imm16.getValue());
+                    }
+
+                    @Override
+                    public String when(@NotNull Imm32 imm32) {
+                        return String.format("0x%x", imm32.getValue());
+                    }
+
+                    @Override
+                    public String when(@NotNull Imm64 imm64) {
+                        return String.format("0x%x", imm64.getValue());
+                    }
+
+                    @Override
+                    public String when(@NotNull Rel8 rel8) {
+                        return String.format("0x%x", (position + instruction.getBytes().length + rel8.getValue()) % 0x10000);
+                    }
+
+                    @Override
+                    public String when(@NotNull Rel16 rel16) {
+                        return String.format("0x%x", (position + instruction.getBytes().length + rel16.getValue()) % 0x10000);
+                    }
+
+                    @Override
+                    public String when(@NotNull Rel32 rel32) {
+                        return String.format("0x%x", (position + instruction.getBytes().length + rel32.getValue()) % 0x100000000L);
+                    }
+
+                    @Override
+                    public String when(@NotNull GPRegister8 register) {
+                        return register.getName();
+                    }
+
+                    @Override
+                    public String when(@NotNull GPRegister16 register) {
+                        return register.getName();
+                    }
+
+                    @Override
+                    public String when(@NotNull GPRegister32 register) {
+                        return register.getName();
+                    }
+
+                    @Override
+                    public String when(@NotNull GPRegister64 register) {
+                        return register.getName();
+                    }
+
+                    @Override
+                    public String when(@NotNull SegmentRegister register) {
+                        return register.getName();
+                    }
+                });
+            }
+            result.append(String.join(", ", arguments_text));
+        } else {
+            result.append(instruction.getName());
+        }
+        return result.toString();
     }
 
     public static void help(Options options) {
