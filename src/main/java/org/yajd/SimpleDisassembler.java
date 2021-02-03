@@ -20,11 +20,11 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.jetbrains.annotations.NotNull;
 import org.yajd.x86.cpu.Instruction;
 import org.yajd.x86.cpu.InstructionIterator;
 
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -70,19 +70,25 @@ public class SimpleDisassembler {
         var instruction_iterator = new InstructionIterator(mode, iterator);
         while (instruction_iterator.hasNext()) {
             var instruction = instruction_iterator.next();
-            int bytes_left = 8;
-            System.out.printf("%4x   ", position);
-            for (var current_byte : instruction.getBytes()) {
-                System.out.printf("%02x ", current_byte);
-                bytes_left--;
-                position++;
-            }
-            for (int byte_count = 0; byte_count <= bytes_left; byte_count++) {
-                System.out.print("   ");
-            }
-            System.out.printf("%s\n", instruction.getName());
+            System.out.printf("%s\n", InstructionToString(instruction, position));
+            position += instruction.getBytes().length;
         }
         file.close();
+    }
+
+    public static String InstructionToString(@NotNull Instruction instruction, long position) {
+        StringBuilder result = new StringBuilder(String.format("%4x  ", position));
+        int bytes_left = 8;
+        System.out.printf("%4x   ", position);
+        for (var current_byte : instruction.getBytes()) {
+            result.append(String.format("%02x ", current_byte));
+            bytes_left--;
+        }
+        for (int byte_count = 0; byte_count <= bytes_left; byte_count++) {
+            result.append("   ");
+        }
+        result.append(instruction.getName());
+        return result.toString();
     }
 
     public static void help(Options options) {
