@@ -38,33 +38,103 @@ import org.yajd.x86.cpu.Rel32;
 import org.yajd.x86.cpu.Rel8;
 import org.yajd.x86.cpu.SegmentRegister;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.Queue;
 
 public class SimpleDisassembler {
     public static void disassembleFile(long start_address, Instruction.Mode mode, String file_name) throws IOException {
         byte[] data = Files.readAllBytes(Paths.get(file_name));
+        Instruction[] instructions = new Instruction[data.length];
+        Queue<Integer> target_positions = new ArrayDeque<>();
+        target_positions.add(0);
+        while (!target_positions.isEmpty()) {
+            int position = target_positions.remove();
+            if (instructions[position] != null) {
+                continue;
+            }
+            var iterator = new ByteIterator(data, position);
+            var instruction_iterator = new InstructionIterator(mode, iterator);
+            decoding:
+            while (instruction_iterator.hasNext()) {
+                var instruction = instruction_iterator.next();
+                for (int i = 0; i < instruction.getBytes().length; ++i) {
+                    if (instructions[position + i] != null) {
+                        break decoding;
+                    }
+                }
+                for (int i = 0; i < instruction.getBytes().length; ++i) {
+                    instructions[position + i] = instruction;
+                }
+                position += instruction.getBytes().length;
+            }
+        }
 
-        var iterator = new ByteIterator(data, 0);
-        long position = start_address;
-        var instruction_iterator = new InstructionIterator(mode, iterator);
-        while (instruction_iterator.hasNext()) {
-            var instruction = instruction_iterator.next();
-            System.out.printf("%s\n", InstructionToString(instruction, position));
-            position += instruction.getBytes().length;
+        for (int position = 0; position < data.length; ) {
+            if (instructions[position] != null) {
+                Instruction instruction = instructions[position];
+                System.out.printf("%s\n", InstructionToString(instructions[position], position + start_address));
+                position += instruction.getBytes().length;
+            } else {
+                int ascii_chunk_len = 1;
+                while (ascii_chunk_len < 8) {
+                    if (position + ascii_chunk_len >= data.length || instructions[position + ascii_chunk_len] != null) {
+                        break;
+                    }
+                    ++ascii_chunk_len;
+                }
+                System.out.printf("%4x  ", position + start_address);
+                for (int i = 0; i < ascii_chunk_len; ++i) {
+                    System.out.printf("%02x ", data[position + i]);
+                }
+                System.out.print("   ".repeat(8 - ascii_chunk_len));
+                System.out.print("  \"");
+                for (int i = 0; i < ascii_chunk_len; ++i) {
+                    byte c = data[position + i];
+                    switch (c) {
+                        case '\'':
+                            System.out.print("\\'");
+                            break;
+                        case '"':
+                            System.out.print("\\\"");
+                            break;
+                        case '\b':
+                            System.out.print("\\b");
+                            break;
+                        case '\f':
+                            System.out.print("\\f");
+                            break;
+                        case '\n':
+                            System.out.print("\\n");
+                            break;
+                        case '\r':
+                            System.out.print("\\f");
+                            break;
+                        case '\t':
+                            System.out.print("\\t");
+                            break;
+                        default:
+                            if (' ' <= c && c <= '~') {
+                                System.out.print((char)c);
+                            } else {
+                                System.out.printf("\\%03o", c & 0xff);
+                            }
+                        }
+                }
+                System.out.println("\"");
+                position += ascii_chunk_len;
+            }
         }
     }
 
     public static String InstructionToString(@NotNull Instruction instruction, long position) {
         StringBuilder result = new StringBuilder(String.format("%4x  ", position));
         int bytes_left = 8;
-        System.out.printf("%4x   ", position);
         for (var current_byte : instruction.getBytes()) {
             result.append(String.format("%02x ", current_byte));
             bytes_left--;
