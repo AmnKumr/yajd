@@ -72,6 +72,54 @@ public class SimpleDisassembler {
                     instructions[position + i] = instruction;
                 }
                 position += instruction.getBytes().length;
+                if (instruction.process(new Instruction.Result<Boolean>() {
+                    @Override
+                    public Boolean when(Instruction instruction) {
+                        return false;
+                    }
+
+                    @Override
+                    public Boolean when(Instruction.Jcc instruction) {
+                        return instruction.getCondition().isEmpty();
+                    }
+
+                    @Override
+                    public Boolean when(Instruction.Ret instruction) {
+                        return true;
+                    }
+
+                    @Override
+                    public Boolean when(Instruction.RetImm16 instruction) {
+                        return true;
+                    }
+
+                    @Override
+                    public Boolean when(Instruction.RetFar instruction) {
+                        return true;
+                    }
+
+                    @Override
+                    public Boolean when(Instruction.RetFarImm16 instruction) {
+                        return true;
+                    }
+
+                    @Override
+                    public Boolean when(Instruction.Iret instruction) {
+                        return true;
+                    }
+
+                    @Override
+                    public Boolean when(Instruction.Iretd instruction) {
+                        return true;
+                    }
+
+                    @Override
+                    public Boolean when(Instruction.Iretq instruction) {
+                        return true;
+                    }
+                })) {
+                    break;
+                }
             }
         }
 
