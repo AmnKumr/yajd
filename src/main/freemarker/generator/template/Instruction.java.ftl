@@ -2150,7 +2150,7 @@ public interface Instruction {
             return Optional.empty();
         }
         byte high_byte = it.next();
-        return Optional.of((short)((high_byte << 8) | low_byte));
+        return Optional.of((short)(((high_byte & 0xff) << 8) | (low_byte & 0xff)));
     }
 
     static Optional<Integer> parseInteger(@NotNull Iterator<Byte> it) {
@@ -2170,10 +2170,10 @@ public interface Instruction {
             return Optional.empty();
         }
         byte high_byte = it.next();
-        return Optional.of((int)((high_byte << 24) |
-                                 (third_byte << 16) |
-                                 (second_byte << 8) |
-                                 low_byte));
+        return Optional.of((int)(((high_byte & 0xff) << 24) |
+                                 ((third_byte & 0xff) << 16) |
+                                 ((second_byte & 0xff) << 8) |
+                                 (low_byte & 0xff)));
     }
 
     static Optional<Long> parseLong(@NotNull Iterator<Byte> it) {
@@ -2209,13 +2209,13 @@ public interface Instruction {
             return Optional.empty();
         }
         byte high_byte = it.next();
-        return Optional.of((((long)high_byte << 56L) |
-                            ((long)seventh_byte << 48L) |
-                            ((long)sixth_byte << 40L) |
-                            ((long)fifth_byte << 32L) |
-                            (fourth_byte << 24) |
-                            (third_byte << 16) |
-                            (second_byte << 8) |
-                            low_byte));
+        return Optional.of((((long)(high_byte & 0xff) << 56L) |
+                            ((long)(seventh_byte & 0xff) << 48L) |
+                            ((long)(sixth_byte & 0xff) << 40L) |
+                            ((long)(fifth_byte & 0xff) << 32L) |
+                            ((fourth_byte & 0xff) << 24) |
+                            ((third_byte & 0xff) << 16) |
+                            ((second_byte & 0xff) << 8) |
+                            (low_byte & 0xff)));
     }
 }
