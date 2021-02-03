@@ -20,6 +20,7 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.codehaus.plexus.util.cli.Arg;
 import org.jetbrains.annotations.NotNull;
 import org.yajd.x86.cpu.Argument;
 import org.yajd.x86.cpu.Instruction;
@@ -91,7 +92,12 @@ public class SimpleDisassembler {
             result.append(String.format("%-8s", instruction.getName()));
             String[] arguments_text = new String[arguments.length];
             for (int i = 0; i < arguments.length; ++i) {
-                arguments_text[i] = arguments[i].toString();
+                arguments_text[i] = arguments[i].process(new Argument.Result<String>() {
+                    @Override
+                    public String when(Argument argument) {
+                        return argument.toString();
+                    }
+                });
             }
             result.append(String.join(", ", arguments_text));
         } else {
