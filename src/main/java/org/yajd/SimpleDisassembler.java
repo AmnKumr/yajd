@@ -55,7 +55,7 @@ public class SimpleDisassembler {
         target_positions.add(0);
         while (!target_positions.isEmpty()) {
             int position = target_positions.remove();
-            if (instructions[position] != null) {
+            if (position < 0 || position >= data.length || instructions[position] != null) {
                 continue;
             }
             var iterator = new ByteIterator(data, position);
@@ -72,6 +72,55 @@ public class SimpleDisassembler {
                     instructions[position + i] = instruction;
                 }
                 position += instruction.getBytes().length;
+                int instruction_end = position; // Need to copy it to access from inner class.
+                Optional<Integer> new_position = instruction.process(new Instruction.Result<Optional<Integer>>() {
+                    @Override
+                    public Optional<Integer> when(Instruction instruction) {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public Optional<Integer> when(Instruction.Jcc instruction) {
+                        Argument[] arguments = instruction.getArguments();
+                        if (arguments.length != 1) {
+                            return Optional.empty();
+                        }
+                        return arguments[0].process(new Argument.Result<Optional<Integer>>() {
+                            @Override
+                            public Optional<Integer> when(@NotNull Argument argument) {
+                                return Optional.empty();
+                            }
+
+                            @Override
+                            public Optional<Integer> when(@NotNull Rel8 argument) {
+                                return Optional.of((instruction_end + argument.getValue()) % 0x10000);
+                            }
+
+                            @Override
+                            public Optional<Integer> when(@NotNull Rel16 argument) {
+                                return Optional.of((instruction_end + argument.getValue()) % 0x10000);
+                            }
+
+                            @Override
+                            public Optional<Integer> when(@NotNull Rel32 argument) {
+                                return Optional.of(instruction_end + argument.getValue());
+                            }
+                        });
+                    }
+
+                    @Override
+                    public Optional<Integer> when(Instruction.CallRel16 instruction) {
+                        return Optional.of((instruction_end + instruction.getArg0().getValue()) % 0x10000);
+                    }
+
+                    @Override
+                    public Optional<Integer> when(Instruction.CallRel32 instruction) {
+                        return Optional.of(instruction_end + instruction.getArg0().getValue());
+                    }
+                });
+                if (new_position.isPresent()) {
+                    target_positions.add(new_position.get());
+                }
                 if (instruction.process(new Instruction.Result<Boolean>() {
                     @Override
                     public Boolean when(Instruction instruction) {
@@ -161,7 +210,7 @@ public class SimpleDisassembler {
                             System.out.print("\\n");
                             break;
                         case '\r':
-                            System.out.print("\\f");
+                            System.out.print("\\r");
                             break;
                         case '\t':
                             System.out.print("\\t");
