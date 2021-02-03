@@ -23,6 +23,10 @@ import org.apache.commons.cli.ParseException;
 import org.codehaus.plexus.util.cli.Arg;
 import org.jetbrains.annotations.NotNull;
 import org.yajd.x86.cpu.Argument;
+import org.yajd.x86.cpu.Imm16;
+import org.yajd.x86.cpu.Imm32;
+import org.yajd.x86.cpu.Imm64;
+import org.yajd.x86.cpu.Imm8;
 import org.yajd.x86.cpu.Instruction;
 import org.yajd.x86.cpu.InstructionIterator;
 
@@ -94,8 +98,28 @@ public class SimpleDisassembler {
             for (int i = 0; i < arguments.length; ++i) {
                 arguments_text[i] = arguments[i].process(new Argument.Result<String>() {
                     @Override
-                    public String when(Argument argument) {
+                    public String when(@NotNull Argument argument) {
                         return argument.toString();
+                    }
+
+                    @Override
+                    public String when(@NotNull Imm8 imm8) {
+                        return String.format("0x%x", imm8.getValue());
+                    }
+
+                    @Override
+                    public String when(@NotNull Imm16 imm16) {
+                        return String.format("0x%x", imm16.getValue());
+                    }
+
+                    @Override
+                    public String when(@NotNull Imm32 imm32) {
+                        return String.format("0x%x", imm32.getValue());
+                    }
+
+                    @Override
+                    public String when(@NotNull Imm64 imm64) {
+                        return String.format("0x%x", imm64.getValue());
                     }
                 });
             }
