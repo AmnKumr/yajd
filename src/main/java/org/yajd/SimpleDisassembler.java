@@ -29,6 +29,9 @@ import org.yajd.x86.cpu.Imm64;
 import org.yajd.x86.cpu.Imm8;
 import org.yajd.x86.cpu.Instruction;
 import org.yajd.x86.cpu.InstructionIterator;
+import org.yajd.x86.cpu.Rel16;
+import org.yajd.x86.cpu.Rel32;
+import org.yajd.x86.cpu.Rel8;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -120,6 +123,21 @@ public class SimpleDisassembler {
                     @Override
                     public String when(@NotNull Imm64 imm64) {
                         return String.format("0x%x", imm64.getValue());
+                    }
+
+                    @Override
+                    public String when(@NotNull Rel8 rel8) {
+                        return String.format("0x%x", (position + instruction.getBytes().length + rel8.getValue()) % 0x10000);
+                    }
+
+                    @Override
+                    public String when(@NotNull Rel16 rel16) {
+                        return String.format("0x%x", (position + instruction.getBytes().length + rel16.getValue()) % 0x10000);
+                    }
+
+                    @Override
+                    public String when(@NotNull Rel32 rel32) {
+                        return String.format("0x%x", (position + instruction.getBytes().length + rel32.getValue()) % 0x100000000L);
                     }
                 });
             }
