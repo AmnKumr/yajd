@@ -51,19 +51,7 @@ public class SimpleDisassembler {
     public static void disassembleFile(long start_address, Instruction.Mode mode, String file_name) throws IOException {
         byte[] data = Files.readAllBytes(Paths.get(file_name));
 
-        var iterator = new Iterator<Byte>() {
-            int position = 0;
-
-            @Override
-            public boolean hasNext() {
-                return position < data.length;
-            }
-
-            @Override
-            public Byte next() {
-                return data[position++];
-            }
-        };
+        var iterator = new ByteIterator(data, 0);
         long position = start_address;
         var instruction_iterator = new InstructionIterator(mode, iterator);
         while (instruction_iterator.hasNext()) {
@@ -275,6 +263,26 @@ public class SimpleDisassembler {
             System.err.println(exp.getMessage());
 
             help(options);
+        }
+    }
+
+    private static class ByteIterator implements Iterator<Byte> {
+        private final byte[] data;
+        int position;
+
+        public ByteIterator(byte[] data, int position) {
+            this.data = data;
+            this.position = position;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return position < data.length;
+        }
+
+        @Override
+        public Byte next() {
+            return data[position++];
         }
     }
 }
