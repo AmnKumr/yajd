@@ -23,6 +23,7 @@ import org.apache.commons.cli.ParseException;
 import org.codehaus.plexus.util.cli.Arg;
 import org.jetbrains.annotations.NotNull;
 import org.yajd.x86.cpu.Argument;
+import org.yajd.x86.cpu.GPAddress16;
 import org.yajd.x86.cpu.GPRegister16;
 import org.yajd.x86.cpu.GPRegister32;
 import org.yajd.x86.cpu.GPRegister64;
@@ -40,8 +41,10 @@ import org.yajd.x86.cpu.SegmentRegister;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 
 public class SimpleDisassembler {
     public static void disassembleFile(long start_address, Instruction.Mode mode, String file_name) throws IOException {
@@ -168,6 +171,40 @@ public class SimpleDisassembler {
                     @Override
                     public String when(@NotNull SegmentRegister register) {
                         return register.getName();
+                    }
+
+                    @Override
+                    public String when(@NotNull GPAddress16 address16) {
+                        StringBuilder result = new StringBuilder();
+                        if (address16.getSize() == 8) {
+                            result.append("BYTE PTR ");
+                        } else if (address16.getSize() == 16) {
+                            result.append("WORD PTR ");
+                        } else {
+                            result.append("PTR ");
+                        }
+                        Optional<SegmentRegister> segment = address16.getSegment();
+                        if (segment.isPresent()) {
+                            result.append(segment.get().getName());
+                            result.append(":");
+                        }
+                        result.append("[");
+                        Optional<GPRegister16> base = address16.getBase();
+                        Optional<GPRegister16> index = address16.getIndex();
+                        short disp = address16.getDisp();
+                        ArrayList<String> components = new ArrayList<>();
+                        if (base.isPresent()) {
+                            components.add(base.get().getName());
+                        }
+                        if (index.isPresent()) {
+                            components.add(index.get().getName());
+                        }
+                        if (disp != 0) {
+                            components.add(String.format("0x%x", disp));
+                        }
+                        result.append(String.join(" + ", components));
+                        result.append("]");
+                        return result.toString();
                     }
                 });
             }
